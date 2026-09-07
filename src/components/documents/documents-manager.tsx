@@ -186,7 +186,7 @@ export function DocumentsManager() {
                 <div>
                   <p className="text-sm font-medium">{doc.documentType.label}</p>
                   <a
-                    href={`/api/documents/file/${doc.fileUrl}`}
+                    href={doc.fileUrl.startsWith("http") ? doc.fileUrl : `/api/documents/file/${doc.fileUrl}`}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-muted-foreground hover:underline"

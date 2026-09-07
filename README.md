@@ -10,7 +10,7 @@ scoring, document drafting, human review) will build on.
 - **Frontend:** Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + hand-rolled shadcn/ui-style components (Radix primitives)
 - **Backend:** Next.js Route Handlers (`src/app/api/**`)
 - **Database:** PostgreSQL via Prisma ORM
-- **File storage:** local filesystem (`./uploads`), abstracted behind `src/lib/storage.ts` so it can be swapped for S3-compatible storage later without touching callers
+- **File storage:** local filesystem (`./uploads`) in dev, [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) in any environment with `BLOB_READ_WRITE_TOKEN` set — both live behind `src/lib/storage.ts` so callers don't care which is active
 - **Forms/validation:** react-hook-form + zod (wired for future use), controlled components for the wizard
 
 ## Data model
@@ -106,8 +106,46 @@ src/
     prisma.ts, storage.ts, current-company.ts, completeness.ts, constants.ts
 ```
 
-Uploaded files are stored under `./uploads/<companyId>/<uuid>.<ext>` and served
-back through `/api/documents/file/[...path]`.
+Uploaded files are stored under `./uploads/<companyId>/<uuid>.<ext>` locally
+and served back through `/api/documents/file/[...path]`. When
+`BLOB_READ_WRITE_TOKEN` is set, `src/lib/storage.ts` uploads to Vercel Blob
+instead and `company_documents.fileUrl` stores the Blob's public URL directly.
+
+## Deploying to Vercel
+
+1. **Import the repo** in the Vercel dashboard (New Project → this GitHub
+   repo). Framework preset (Next.js) is auto-detected — no build command
+   changes needed.
+
+2. **Add a Postgres database.** Vercel's Storage tab → Create Database →
+   Postgres (Neon-backed) is the easiest path; Neon/Supabase/RDS work too.
+   Either way, set the resulting connection string as the `DATABASE_URL`
+   environment variable on the Vercel project (all environments).
+
+3. **Add a Blob store** for document uploads: Storage tab → Create → Blob.
+   Attaching it to the project auto-populates `BLOB_READ_WRITE_TOKEN` as an
+   env var — nothing else to configure; `src/lib/storage.ts` picks it up
+   automatically and switches off local-disk storage.
+
+4. **Run migrations against the production database** (once, and again after
+   any future schema change):
+
+   ```bash
+   DATABASE_URL="<your production connection string>" npm run db:migrate:deploy
+   DATABASE_URL="<your production connection string>" npm run db:seed
+   ```
+
+   `prisma generate` itself runs automatically on Vercel via the `postinstall`
+   script — you don't need to add anything to the build command for that.
+
+5. **Deploy.** Push to the branch Vercel is watching (or trigger a deploy from
+   the dashboard) — `npm install` → `postinstall` (Prisma Client generation)
+   → `next build` all run automatically.
+
+Note: this project has no auth yet (Phase 1 is intentionally single-tenant —
+see `src/lib/current-company.ts`), so anyone with the deployed URL sees/edits
+the same one company profile. Fine for an internal demo; add auth before
+sharing the URL more broadly.
 
 ## Notes on scope
 
