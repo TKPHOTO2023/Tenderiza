@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ClosingBadge } from "@/components/tenders/closing-badge";
+import { DocumentRow } from "@/components/tenders/document-row";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { ArrowLeft, ExternalLink, FileText } from "lucide-react";
+import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Tender } from "@prisma/client";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
@@ -64,20 +65,12 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
           <CardHeader>
             <CardTitle className="text-base">Documents</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-2">
+          <CardContent className="grid gap-3">
             {tender.documentUrls.length === 0 && (
               <p className="text-sm text-muted-foreground">No documents linked.</p>
             )}
             {tender.documentUrls.map((url, i) => (
-              <a
-                key={i}
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-2 text-sm text-primary hover:underline"
-              >
-                <FileText className="h-4 w-4" /> Document {i + 1}
-              </a>
+              <DocumentRow key={i} url={url} label={`Document ${i + 1}`} />
             ))}
             {tender.sourceUrl && (
               <>
