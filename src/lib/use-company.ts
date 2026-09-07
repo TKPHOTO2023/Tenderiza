@@ -14,6 +14,10 @@ export function useCompany() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(fields),
     });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || "Failed to save your profile. Please try again.");
+    }
     const updated = await res.json();
     mutate(updated, { revalidate: false });
     return updated as CompanyFull;

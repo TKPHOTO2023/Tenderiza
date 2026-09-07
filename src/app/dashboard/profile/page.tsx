@@ -15,9 +15,10 @@ import {
   capabilityFromCompany,
   type CapabilityFormValue,
 } from "@/components/onboarding/step-capability";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCompany, useCategories } from "@/lib/use-company";
 import { syncAccreditations, syncReferences } from "@/lib/sync-collections";
-import { Check } from "lucide-react";
+import { AlertTriangle, Check } from "lucide-react";
 import type { CompanyFull } from "@/lib/api-types";
 
 export default function ProfilePage() {
@@ -45,32 +46,51 @@ function ProfileEditor({
   const [capability, setCapability] = useState<CapabilityFormValue>(() => capabilityFromCompany(company));
   const [savedTab, setSavedTab] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   async function saveBasics() {
     setSaving(true);
-    await updateCompany(basics);
-    setSaving(false);
-    flashSaved("basics");
+    setSaveError(null);
+    try {
+      await updateCompany(basics);
+      flashSaved("basics");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveCompliance() {
     setSaving(true);
-    const { accreditations, ...rest } = compliance;
-    await updateCompany(rest);
-    await syncAccreditations(company.accreditations.map((a) => a.id), accreditations);
-    await mutate();
-    setSaving(false);
-    flashSaved("compliance");
+    setSaveError(null);
+    try {
+      const { accreditations, ...rest } = compliance;
+      await updateCompany(rest);
+      await syncAccreditations(company.accreditations.map((a) => a.id), accreditations);
+      await mutate();
+      flashSaved("compliance");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function saveCapability() {
     setSaving(true);
-    const { references, ...rest } = capability;
-    await updateCompany(rest);
-    await syncReferences(company.references.map((r) => r.id), references);
-    await mutate();
-    setSaving(false);
-    flashSaved("capability");
+    setSaveError(null);
+    try {
+      const { references, ...rest } = capability;
+      await updateCompany(rest);
+      await syncReferences(company.references.map((r) => r.id), references);
+      await mutate();
+      flashSaved("capability");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Failed to save.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   function flashSaved(tab: string) {
@@ -86,6 +106,13 @@ function ProfileEditor({
           This data is checked directly against tender eligibility criteria — keep it up to date.
         </p>
       </div>
+
+      {saveError && (
+        <Alert variant="destructive">
+          <AlertTriangle />
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
+      )}
 
       <Tabs defaultValue="basics">
         <TabsList>

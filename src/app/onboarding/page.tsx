@@ -18,10 +18,11 @@ import {
 } from "@/components/onboarding/step-capability";
 import { StepReview } from "@/components/onboarding/step-review";
 import { DocumentsManager } from "@/components/documents/documents-manager";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCompany, useCategories } from "@/lib/use-company";
 import { syncAccreditations, syncReferences } from "@/lib/sync-collections";
 import { ONBOARDING_STEPS } from "@/lib/constants";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import type { CompanyFull } from "@/lib/api-types";
 
 export default function OnboardingPage() {
@@ -63,6 +64,7 @@ function OnboardingWizard({
     return idx >= 0 ? idx : 0;
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [basics, setBasics] = useState<BasicsFormValue>(() => basicsFromCompany(company));
   const [compliance, setCompliance] = useState<ComplianceFormValue>(() => complianceFromCompany(company));
@@ -75,6 +77,7 @@ function OnboardingWizard({
 
   async function persistCurrentStep() {
     setSaving(true);
+    setSaveError(null);
     try {
       if (currentStep.key === "COMPANY_BASICS") {
         await updateCompany(basics);
@@ -95,13 +98,18 @@ function OnboardingWizard({
       }
       const fresh = await onCompanyChange();
       if (fresh) setReviewCompany(fresh);
+      return true;
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Something went wrong while saving.");
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
   async function goNext() {
-    await persistCurrentStep();
+    const success = await persistCurrentStep();
+    if (!success) return;
     if (isLastStep) {
       await fetch("/api/onboarding", {
         method: "PATCH",
@@ -188,6 +196,13 @@ function OnboardingWizard({
           {currentStep.key === "REVIEW" && <StepReview company={reviewCompany} />}
         </CardContent>
       </Card>
+
+      {saveError && (
+        <Alert variant="destructive" className="mt-4">
+          <AlertTriangle />
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
+      )}
 
       <div className="mt-6 flex justify-between">
         <Button variant="outline" onClick={goBack} disabled={!canGoBack || saving}>

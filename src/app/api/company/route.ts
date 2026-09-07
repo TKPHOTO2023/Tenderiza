@@ -33,10 +33,23 @@ export async function PATCH(req: NextRequest) {
     }
   }
 
-  const updated = await prisma.company.update({
-    where: { id: company.id },
-    data: companyFields,
-  });
+  // Coerce known numeric fields (form inputs always send strings).
+  if (companyFields.teamSize === "" || companyFields.teamSize == null) {
+    companyFields.teamSize = null;
+  } else if (typeof companyFields.teamSize === "string") {
+    companyFields.teamSize = parseInt(companyFields.teamSize, 10);
+  }
+
+  let updated;
+  try {
+    updated = await prisma.company.update({
+      where: { id: company.id },
+      data: companyFields,
+    });
+  } catch (error) {
+    console.error("Failed to update company", error);
+    return NextResponse.json({ error: "Failed to update company profile" }, { status: 400 });
+  }
 
   if (categoryIds) {
     await prisma.companyCategory.deleteMany({ where: { companyId: company.id } });
