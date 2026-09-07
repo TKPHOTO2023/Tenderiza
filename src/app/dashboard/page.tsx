@@ -27,12 +27,20 @@ export default function DashboardOverviewPage() {
       <CompletenessWidget company={company} />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <ComingSoonCard
-          icon={FileStack}
-          title="Tenders"
-          description="Live tenders from the National Treasury eTenders portal will appear here."
-          href="/dashboard/tenders"
-        />
+        <Link href="/dashboard/tenders">
+          <Card className="h-full transition-colors hover:bg-accent/50">
+            <CardHeader>
+              <FileStack className="mb-1 h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Tenders</CardTitle>
+              <CardDescription>
+                Live tenders from the National Treasury eTenders portal.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-xs font-medium text-primary">Browse tenders →</span>
+            </CardContent>
+          </Card>
+        </Link>
         <ComingSoonCard
           icon={Target}
           title="Matches"

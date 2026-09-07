@@ -215,3 +215,69 @@ model CompanyDocument {
 
   @@map("company_documents")
 }
+
+// ---------------------------------------------------------------------------
+// Phase 2: Tender ingestion (National Treasury eTenders OCDS API)
+// ---------------------------------------------------------------------------
+
+// Normalized from OCDS's tenderStatus codelist (planning/planned/active/
+// cancelled/unsuccessful/withdrawn/complete) into a small clean set. Category/
+// sector mapping is deliberately NOT modeled here — that's Phase 3's job,
+// which will map `category` (whatever OCDS gives us) onto our own Category
+// taxonomy for eligibility scoring.
+enum TenderStatus {
+  PLANNED
+  OPEN
+  CLOSED
+  CANCELLED
+  UNKNOWN
+}
+
+model Tender {
+  id String @id @default(cuid())
+
+  ocid String @unique // OCDS unique contracting process ID — dedup key
+
+  title       String?
+  description String?
+
+  buyerName String?
+  province  String?
+  category  String? // raw OCDS classification/description, unmapped
+
+  status TenderStatus @default(UNKNOWN)
+
+  publishedDate DateTime?
+  closingDate   DateTime?
+
+  estimatedValue Decimal? @db.Decimal(16, 2)
+  currency       String?
+
+  documentUrls String[] @default([])
+  sourceUrl    String?
+
+  rawData Json // full original OCDS release, for anything not normalized above
+
+  firstSeenAt   DateTime @default(now())
+  lastUpdatedAt DateTime @updatedAt
+
+  @@index([status, closingDate])
+  @@index([province])
+  @@map("tenders")
+}
+
+model TenderSyncLog {
+  id String @id @default(cuid())
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  releasesFetched Int @default(0)
+  tendersCreated  Int @default(0)
+  tendersUpdated  Int @default(0)
+
+  success      Boolean @default(false)
+  errorMessage String?
+
+  @@map("tender_sync_logs")
+}

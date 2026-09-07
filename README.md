@@ -147,6 +147,50 @@ see `src/lib/current-company.ts`), so anyone with the deployed URL sees/edits
 the same one company profile. Fine for an internal demo; add auth before
 sharing the URL more broadly.
 
+## Phase 2: Tender ingestion
+
+Pulls live tender opportunities from National Treasury's eTenders OCDS API
+(`https://ocds-api.etenders.gov.za/api/OCDSReleases`, no API key required)
+into a `tenders` table, and shows them at **Dashboard → Tenders**.
+
+- `src/lib/ocds-client.ts` — paginated fetch against the live API.
+- `src/lib/tender-normalize.ts` — tolerant mapping from an OCDS release into
+  our `Tender` shape (title, buyer, province, category, status, dates, value,
+  document links). Every field is best-effort — OCDS publishers vary a lot in
+  completeness — and the full original release is always kept in `rawData`
+  so nothing normalization missed is ever lost.
+- `src/lib/tender-sync.ts` — upserts by `ocid` (dedup key) and records every
+  run in `tender_sync_logs` (fetched/created/updated counts, success/error).
+- The **Tenders** page defaults to open tenders with a future closing date,
+  soonest-closing first; a "show all" toggle reveals closed/cancelled ones
+  too. Closing-date badges highlight anything due within 7 (red) or 14
+  (amber) days.
+
+**Manual sync:** click "Sync now" on the Tenders page (pulls the last 14
+days of releases). **Automatic sync:** `vercel.json` schedules
+`GET /api/cron/sync-tenders` daily via Vercel Cron (pulls the last 3 days —
+enough for a daily catch-up). To protect that endpoint from being triggered
+by anyone who finds the URL, set a `CRON_SECRET` env var on the Vercel
+project — Vercel automatically sends it as a bearer token on cron-triggered
+requests, and the route checks for it (skipped if you don't set one, since
+Vercel Cron doesn't require it, but then the endpoint runs for anyone who
+GETs it).
+
+No sample/fixture tenders are seeded — this table only ever holds what the
+real API returns. If a sync finishes with `releasesFetched: 0`, that's the
+live API genuinely having nothing published in that date window, not a bug.
+
+**Note on endpoint verification:** this sandbox's network policy blocks
+outbound requests to `ocds-api.etenders.gov.za`, so the endpoint contract
+above was confirmed via the Open Contracting Partnership's own
+`kingfisher-collect` scraper source rather than a live test call from here.
+The ingestion code is written defensively (tolerant of missing fields, safe
+pagination fallback) precisely because of that — **you'll want to run the
+first real "Sync now" after deploying and skim a tender's `rawData` in the
+database to confirm the field mapping (especially `province`, which OCDS
+doesn't standardize well) looks right, and tell me if anything needs
+adjusting.**
+
 ## Notes on scope
 
 This is Phase 1 only, per the product plan:
