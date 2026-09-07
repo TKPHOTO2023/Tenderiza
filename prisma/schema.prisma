@@ -1,0 +1,217 @@
+// Tenderiza — Phase 1 data model
+// Designed so Phases 2-5 (tender ingestion, eligibility scoring,
+// document drafting, review & submission) can be layered on without
+// reshaping these core tables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Core company profile
+// ---------------------------------------------------------------------------
+
+enum CompanyType {
+  PTY_LTD
+  CC
+  SOLE_PROPRIETOR
+  PARTNERSHIP
+  NPO
+  TRUST
+  OTHER
+}
+
+enum BbbeeLevel {
+  LEVEL_1
+  LEVEL_2
+  LEVEL_3
+  LEVEL_4
+  LEVEL_5
+  LEVEL_6
+  LEVEL_7
+  LEVEL_8
+  EXEMPT_MICRO_ENTERPRISE
+  QUALIFYING_SMALL_ENTERPRISE
+  NON_COMPLIANT
+}
+
+enum CsdStatus {
+  NOT_REGISTERED
+  PENDING
+  REGISTERED
+  SUSPENDED
+}
+
+enum Province {
+  EASTERN_CAPE
+  FREE_STATE
+  GAUTENG
+  KWAZULU_NATAL
+  LIMPOPO
+  MPUMALANGA
+  NORTHERN_CAPE
+  NORTH_WEST
+  WESTERN_CAPE
+}
+
+enum OnboardingStep {
+  COMPANY_BASICS
+  COMPLIANCE
+  CAPABILITY
+  DOCUMENTS
+  REVIEW
+  COMPLETE
+}
+
+model Company {
+  id String @id @default(cuid())
+
+  // Step 1: Company basics
+  companyName        String?
+  tradingName         String?
+  registrationNumber  String?
+  vatNumber           String?
+  companyType         CompanyType?
+  contactPersonName   String?
+  contactEmail        String?
+  contactPhone        String?
+  addressLine1        String?
+  addressLine2        String?
+  city                String?
+  postalCode          String?
+  operatingProvinces  Province[] @default([])
+  website             String?
+  description         String?
+
+  // Step 2: Compliance & registration status
+  csdRegistrationNumber String?
+  csdStatus             CsdStatus?
+  taxComplianceStatusPin String?
+  taxComplianceExpiry    DateTime?
+  bbbeeLevel             BbbeeLevel?
+  bbbeeCertificateExpiry DateTime?
+  cidbRegistrationNumber String?
+  cidbGrade              String?
+  cidbClassOfWork        String?
+
+  // Step 3: Business capability
+  teamSize        Int?
+  capacityNotes   String?
+
+  // Onboarding progress tracking (supports save-and-resume)
+  currentStep        OnboardingStep @default(COMPANY_BASICS)
+  onboardingComplete Boolean        @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  categories   CompanyCategory[]
+  accreditations CompanyAccreditation[]
+  references   CompanyReference[]
+  documents    CompanyDocument[]
+
+  @@map("companies")
+}
+
+// ---------------------------------------------------------------------------
+// Sector / industry categories (UNSPSC-style), many-to-many with company
+// ---------------------------------------------------------------------------
+
+model Category {
+  id          String  @id @default(cuid())
+  code        String  @unique // e.g. UNSPSC-style segment code
+  name        String
+  description String?
+
+  companies CompanyCategory[]
+
+  @@map("categories")
+}
+
+model CompanyCategory {
+  id         String   @id @default(cuid())
+  companyId  String
+  categoryId String
+  createdAt  DateTime @default(now())
+
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, categoryId])
+  @@map("company_categories")
+}
+
+// ---------------------------------------------------------------------------
+// Sector-specific accreditations (NHBRC, ISO, etc.) — custom & extensible
+// ---------------------------------------------------------------------------
+
+model CompanyAccreditation {
+  id           String    @id @default(cuid())
+  companyId    String
+  name         String
+  referenceNo  String?
+  expiryDate   DateTime?
+  createdAt    DateTime  @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_accreditations")
+}
+
+// ---------------------------------------------------------------------------
+// Past project references
+// ---------------------------------------------------------------------------
+
+model CompanyReference {
+  id                String   @id @default(cuid())
+  companyId         String
+  clientName        String
+  projectDescription String
+  value             Decimal? @db.Decimal(14, 2)
+  year              Int?
+  createdAt         DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("company_references")
+}
+
+// ---------------------------------------------------------------------------
+// Document types (extensible catalog, not hardcoded) & uploaded documents
+// ---------------------------------------------------------------------------
+
+model DocumentType {
+  id           String  @id @default(cuid())
+  code         String  @unique
+  label        String
+  description  String?
+  requiresExpiry Boolean @default(false)
+  isCustom     Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  documents CompanyDocument[]
+
+  @@map("document_types")
+}
+
+model CompanyDocument {
+  id             String    @id @default(cuid())
+  companyId      String
+  documentTypeId String
+  fileName       String
+  fileUrl        String
+  mimeType       String?
+  fileSizeBytes  Int?
+  expiryDate     DateTime?
+  uploadedAt     DateTime  @default(now())
+
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  documentType DocumentType @relation(fields: [documentTypeId], references: [id])
+
+  @@map("company_documents")
+}
