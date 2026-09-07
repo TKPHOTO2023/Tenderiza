@@ -29,7 +29,10 @@ function toDate(value: unknown): Date | null {
 }
 
 function toDecimal(value: unknown): Prisma.Decimal | null {
-  if (typeof value !== "number" || !isFinite(value)) return null;
+  // Some publishers send value.amount: 0 as a placeholder for "not yet
+  // determined" rather than a genuine zero-rand tender — treat it as
+  // unknown rather than a real value so the UI doesn't show "R 0".
+  if (typeof value !== "number" || !isFinite(value) || value <= 0) return null;
   return new Prisma.Decimal(value);
 }
 
