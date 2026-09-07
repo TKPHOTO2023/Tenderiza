@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ClosingBadge } from "@/components/tenders/closing-badge";
 import { DocumentRow } from "@/components/tenders/document-row";
+import { RequirementsSummary } from "@/components/tenders/requirements-summary";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Tender } from "@prisma/client";
@@ -17,7 +18,7 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function TenderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: tender, isLoading } = useSWR<Tender>(`/api/tenders/${id}`, fetcher);
+  const { data: tender, isLoading, mutate } = useSWR<Tender>(`/api/tenders/${id}`, fetcher);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading…</p>;
   if (!tender) return <p className="text-sm text-muted-foreground">Tender not found.</p>;
@@ -88,6 +89,8 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
           </CardContent>
         </Card>
       </div>
+
+      <RequirementsSummary tender={tender} onUpdated={(updated) => mutate(updated, { revalidate: false })} />
 
       {tender.description && (
         <Card>

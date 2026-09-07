@@ -258,6 +258,13 @@ model Tender {
 
   rawData Json // full original OCDS release, for anything not normalized above
 
+  // AI-generated "what must we deliver" summary, extracted from the tender's
+  // linked PDF documents (+ OCDS description as a fallback). Cached here so
+  // it's generated once, on demand, rather than on every page view — see
+  // src/lib/tender-summary.ts.
+  requirementsSummary            Json?
+  requirementsSummaryGeneratedAt DateTime?
+
   firstSeenAt   DateTime @default(now())
   lastUpdatedAt DateTime @updatedAt
 

@@ -191,6 +191,31 @@ database to confirm the field mapping (especially `province`, which OCDS
 doesn't standardize well) looks right, and tell me if anything needs
 adjusting.**
 
+### AI requirements summary
+
+On a tender's detail page, "Generate summary" reads the tender's linked PDF
+documents (falling back to just its OCDS description if none are readable)
+and extracts, via Claude, what a bidding company would actually need to
+deliver: scope of work, deliverables, eligibility requirements, submission
+requirements, and any extra key dates.
+
+- Requires an `ANTHROPIC_API_KEY` environment variable — get one at
+  [console.anthropic.com](https://console.anthropic.com). Without it, the
+  button returns a clear error instead of the summary; nothing else in the
+  app depends on this key.
+- Uses `claude-opus-5` with structured output (`src/lib/tender-summary.ts`)
+  so the response always matches a fixed schema — no free-text parsing.
+- Generation is manual and cached (`tenders.requirementsSummary` +
+  `requirementsSummaryGeneratedAt`) — it costs a real API call per
+  generation, so it never runs automatically on page load, only on click.
+- Documents are only fetched from `*.etenders.gov.za` / `*.treasury.gov.za`
+  (same allowlist as the document preview proxy) and capped at 3 PDFs per
+  tender to keep request size and cost bounded.
+- This is a lightweight, on-demand version of what Phase 3 (eligibility
+  scoring) and Phase 4 (document drafting) will eventually do more
+  systematically against a company's actual profile — this just summarizes
+  the tender itself, with no matching against your company yet.
+
 ## Notes on scope
 
 This is Phase 1 only, per the product plan:
