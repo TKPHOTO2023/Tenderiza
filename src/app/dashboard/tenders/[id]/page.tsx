@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { ClosingBadge } from "@/components/tenders/closing-badge";
 import { DocumentRow } from "@/components/tenders/document-row";
 import { RequirementsSummary } from "@/components/tenders/requirements-summary";
+import { CostEstimate } from "@/components/tenders/cost-estimate";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Tender } from "@prisma/client";
@@ -90,7 +91,10 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
         </Card>
       </div>
 
-      <RequirementsSummary tender={tender} onUpdated={(updated) => mutate(updated, { revalidate: false })} />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <RequirementsSummary tender={tender} onUpdated={(updated) => mutate(updated, { revalidate: false })} />
+        <CostEstimate tender={tender} onUpdated={(updated) => mutate(updated, { revalidate: false })} />
+      </div>
 
       {tender.description && (
         <Card>

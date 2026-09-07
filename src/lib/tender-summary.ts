@@ -1,23 +1,8 @@
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { getAnthropicClient } from "@/lib/anthropic";
+import { fetchTenderDocuments } from "@/lib/tender-documents";
 import type { Tender } from "@prisma/client";
-
-// Same allowlist as the document preview proxy — we only ever fetch tender
-// documents from the government's own domains.
-const ALLOWED_HOST_SUFFIXES = [".etenders.gov.za", ".treasury.gov.za", "etenders.gov.za", "treasury.gov.za"];
-
-function isAllowedDocumentHost(url: string): boolean {
-  try {
-    const { protocol, hostname } = new URL(url);
-    return protocol === "https:" && ALLOWED_HOST_SUFFIXES.some((s) => hostname === s.replace(/^\./, "") || hostname.endsWith(s));
-  } catch {
-    return false;
-  }
-}
-
-const MAX_DOCUMENTS = 3;
-const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024; // keep well under the API's 32MB request cap across multiple docs
 
 export const TenderRequirementsSchema = z.object({
   overview: z.string().describe("1-3 sentence plain-language summary of what this tender is for"),
@@ -36,23 +21,6 @@ export const TenderRequirementsSchema = z.object({
 
 export type TenderRequirements = z.infer<typeof TenderRequirementsSchema>;
 
-async function fetchDocumentAsBase64(url: string): Promise<{ data: string; mediaType: string } | null> {
-  if (!isAllowedDocumentHost(url)) return null;
-  try {
-    const res = await fetch(url, { headers: { Accept: "application/pdf" } });
-    if (!res.ok) return null;
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("pdf") && !url.toLowerCase().endsWith(".pdf")) return null;
-
-    const buffer = Buffer.from(await res.arrayBuffer());
-    if (buffer.byteLength > MAX_DOCUMENT_BYTES) return null;
-
-    return { data: buffer.toString("base64"), mediaType: "application/pdf" };
-  } catch {
-    return null;
-  }
-}
-
 export interface GenerateSummaryResult {
   requirements: TenderRequirements;
   documentsAnalyzed: number;
@@ -65,17 +33,12 @@ export interface GenerateSummaryResult {
  */
 export async function generateTenderRequirementsSummary(tender: Tender): Promise<GenerateSummaryResult> {
   const client = getAnthropicClient();
+  const documents = await fetchTenderDocuments(tender.documentUrls);
 
-  const documentBlocks: Array<{ type: "document"; source: { type: "base64"; media_type: "application/pdf"; data: string } }> = [];
-  for (const url of tender.documentUrls.slice(0, MAX_DOCUMENTS)) {
-    const doc = await fetchDocumentAsBase64(url);
-    if (doc) {
-      documentBlocks.push({
-        type: "document",
-        source: { type: "base64", media_type: "application/pdf", data: doc.data },
-      });
-    }
-  }
+  const documentBlocks = documents.map((doc) => ({
+    type: "document" as const,
+    source: { type: "base64" as const, media_type: doc.mediaType, data: doc.data },
+  }));
 
   const contextText = [
     `Title: ${tender.title || "(no title provided)"}`,

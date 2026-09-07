@@ -216,6 +216,25 @@ requirements, and any extra key dates.
   systematically against a company's actual profile — this just summarizes
   the tender itself, with no matching against your company yet.
 
+### AI cost estimate ("quote guidance")
+
+Also on the tender detail page, "Estimate cost" (`src/lib/tender-cost-estimate.ts`)
+gives a rough ZAR range for what a company might quote — reasoned from the
+scope of work like an experienced estimator (typical SA public-sector rates,
+labor/materials/duration drivers), **independently of any official OCDS
+estimated value every time** — deliberately not just parroting back that
+number. If OCDS did publish one, it's shown alongside for comparison, with a
+short note on whether the AI estimate agrees with it or why it might not.
+
+This is a **generic market-rate estimate, not personalized** to any one
+company's actual cost structure or past project history — same output for
+every company on the same tender. Shares the same document-fetch allowlist,
+manual-trigger-and-cache pattern, and `ANTHROPIC_API_KEY` requirement as the
+requirements summary above (`src/lib/tender-documents.ts` is the shared
+piece both features fetch PDFs through). Always a range with a stated
+confidence level, never a false-precision single number — and always
+labeled as guidance, not a formal quote.
+
 ## Notes on scope
 
 This is Phase 1 only, per the product plan:

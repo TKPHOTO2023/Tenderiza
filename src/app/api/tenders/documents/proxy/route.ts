@@ -1,28 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Government procurement document hosts we're willing to proxy. Keeps this
-// route from being usable as an open SSRF relay to arbitrary URLs while
-// still covering the domains eTenders documents actually come from.
-const ALLOWED_HOST_SUFFIXES = [".etenders.gov.za", ".treasury.gov.za", "etenders.gov.za", "treasury.gov.za"];
-
-function isAllowedHost(hostname: string) {
-  return ALLOWED_HOST_SUFFIXES.some((suffix) => hostname === suffix.replace(/^\./, "") || hostname.endsWith(suffix));
-}
+import { isAllowedDocumentHost } from "@/lib/tender-documents";
 
 export async function GET(req: NextRequest) {
   const target = req.nextUrl.searchParams.get("url");
   if (!target) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 
-  let parsed: URL;
-  try {
-    parsed = new URL(target);
-  } catch {
-    return NextResponse.json({ error: "Invalid url" }, { status: 400 });
-  }
-
-  if (parsed.protocol !== "https:" || !isAllowedHost(parsed.hostname)) {
+  if (!isAllowedDocumentHost(target)) {
     return NextResponse.json({ error: "URL not allowed" }, { status: 403 });
   }
+
+  const parsed = new URL(target);
 
   let upstream: Response;
   try {

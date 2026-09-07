@@ -265,6 +265,12 @@ model Tender {
   requirementsSummary            Json?
   requirementsSummaryGeneratedAt DateTime?
 
+  // AI-generated, generic market-rate quote guidance — see
+  // src/lib/tender-cost-estimate.ts. Reasoned independently of any official
+  // OCDS estimatedValue every time; not personalized to any one company.
+  costEstimate            Json?
+  costEstimateGeneratedAt DateTime?
+
   firstSeenAt   DateTime @default(now())
   lastUpdatedAt DateTime @updatedAt
 

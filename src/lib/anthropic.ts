@@ -11,7 +11,7 @@ let client: Anthropic | null = null;
 export function getAnthropicClient(): Anthropic {
   if (!process.env.ANTHROPIC_API_KEY) {
     throw new Error(
-      "ANTHROPIC_API_KEY is not set. Add it as an environment variable to enable AI tender summaries."
+      "ANTHROPIC_API_KEY is not set. Add it as an environment variable to enable AI tender summaries and cost estimates."
     );
   }
   if (!client) client = new Anthropic();
