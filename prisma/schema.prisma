@@ -114,6 +114,7 @@ model Company {
   accreditations CompanyAccreditation[]
   references   CompanyReference[]
   documents    CompanyDocument[]
+  matches      Match[]
 
   @@map("companies")
 }
@@ -271,12 +272,64 @@ model Tender {
   costEstimate            Json?
   costEstimateGeneratedAt DateTime?
 
+  // Phase 3: AI-extracted eligibility-relevant requirements (required
+  // B-BBEE level, CIDB grade, compulsory briefing, functionality threshold)
+  // pulled from the tender's PDF documents — see src/lib/tender-extraction.ts.
+  // Cached and only re-run when explicitly requested (documents rarely
+  // change after publication), unlike requirementsSummary/costEstimate
+  // above which are narrative and re-generated freely.
+  extractedRequirements   Json?
+  requirementsExtractedAt DateTime?
+
   firstSeenAt   DateTime @default(now())
   lastUpdatedAt DateTime @updatedAt
+
+  matches Match[]
 
   @@index([status, closingDate])
   @@index([province])
   @@map("tenders")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 3: Eligibility matching
+// ---------------------------------------------------------------------------
+
+enum MatchStatus {
+  ELIGIBLE
+  PARTIAL
+  NOT_ELIGIBLE
+  NEEDS_REVIEW
+}
+
+model Match {
+  id String @id @default(cuid())
+
+  companyId String
+  tenderId  String
+
+  // Layer 1 — structural, computed from OCDS metadata + company profile,
+  // no AI call needed.
+  categoryMatch Boolean
+  provinceMatch Boolean
+
+  // Layer 2 — hard pass/fail/needs-review breakdown per extracted
+  // requirement, e.g. [{ requirement: "CIDB Grade", status: "fail",
+  // detail: "Requires Grade 6 — your profile has Grade 4" }]. Empty until
+  // extraction has run for this tender.
+  hardChecks Json @default("[]")
+
+  status  MatchStatus
+  reasons String[] @default([]) // short human-readable "why" bullets
+
+  computedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tender  Tender  @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, tenderId])
+  @@index([companyId, status])
+  @@map("matches")
 }
 
 model TenderSyncLog {

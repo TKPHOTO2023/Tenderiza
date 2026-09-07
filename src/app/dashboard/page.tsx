@@ -41,12 +41,18 @@ export default function DashboardOverviewPage() {
             </CardContent>
           </Card>
         </Link>
-        <ComingSoonCard
-          icon={Target}
-          title="Matches"
-          description="Tenders scored against your profile's eligibility will show up here."
-          href="/dashboard/matches"
-        />
+        <Link href="/dashboard/matches">
+          <Card className="h-full transition-colors hover:bg-accent/50">
+            <CardHeader>
+              <Target className="mb-1 h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Matches</CardTitle>
+              <CardDescription>Open tenders scored against your company profile.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-xs font-medium text-primary">View matches →</span>
+            </CardContent>
+          </Card>
+        </Link>
         <ComingSoonCard
           icon={Sparkles}
           title="Drafts"

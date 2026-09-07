@@ -235,6 +235,72 @@ piece both features fetch PDFs through). Always a range with a stated
 confidence level, never a false-precision single number — and always
 labeled as guidance, not a formal quote.
 
+## Phase 3: Eligibility matching
+
+Every open tender is scored against your company profile automatically —
+right after every sync (manual "Sync now" or the daily cron) — and shown at
+**Dashboard → Matches**, ranked best-first with a "Recompute all" button and
+a per-tender "Re-check" action.
+
+**Two layers**, per the original spec:
+
+1. **Structural (Layer 1, no AI call, `src/lib/match-structural.ts`)** —
+   compares the tender's OCDS category/title/description against your
+   selected sector categories (via a hand-built keyword map per category,
+   since OCDS carries no shared taxonomy with our own — see
+   `CATEGORY_KEYWORDS`), and its province (normalized from whatever raw
+   string/abbreviation the publisher used) against your operating
+   provinces. Produces a `strong` / `weak` / `none` tier — `none` (no
+   overlap on either axis) skips Layer 2 entirely to avoid spending an API
+   call on an irrelevant tender.
+2. **AI requirement extraction (Layer 2, `src/lib/tender-extraction.ts`)**
+   — for tenders that pass Layer 1, reads the tender's actual PDF documents
+   and extracts (via Claude structured output, same pattern as the Phase 2
+   AI features) the things OCDS metadata never carries: required B-BBEE
+   level, required CIDB grade/class, whether a briefing is compulsory (+
+   date/venue), and any functionality threshold — explicitly told to
+   return `null` rather than guess. Cached on the tender
+   (`extractedRequirements`/`requirementsExtractedAt`) and only re-run via
+   "Re-check", since tender documents essentially never change after
+   publication.
+
+`src/lib/match-eligibility.ts` then compares the extracted requirements
+against your profile — CIDB grade as a numeric comparison, B-BBEE as a
+rank comparison (EME/QSE treated as satisfying most level requirements,
+per how the B-BBEE codes generally work) — producing a pass/fail/needs-review
+per requirement, plus **info-only** entries for briefing/functionality
+details you can't auto-verify but should know about.
+
+**Overall status** (`matches.status`):
+- **Not eligible** — no structural overlap at all, or a hard requirement
+  (CIDB/B-BBEE) is explicitly failed.
+- **Needs review** — a hard requirement is stated but your profile is
+  missing that field, extraction couldn't parse a stated grade/level, or
+  extraction hasn't successfully run yet (e.g. `ANTHROPIC_API_KEY` isn't
+  set) — **never silently hidden or marked ineligible**, exactly as
+  specified.
+- **Eligible** — both category and province match, and every statable hard
+  requirement passes.
+- **Partial** — only one of category/province matches, with no hard
+  failures.
+
+**Cost/time control:** a single sync run caps Layer 2 extractions at 3 new
+tenders (manual "Recompute all" allows 5) to stay within the serverless
+function's time budget — tenders whose extraction misses the cap keep
+their structural-only score and get picked up on the next sync or a manual
+recompute, never left unscored.
+
+**Single-tenant today, multi-tenant-ready:** `matches` is keyed by
+`companyId` + `tenderId` (unique constraint) even though Phase 1 only ever
+creates one `Company` row — so this doesn't need reshaping if/when
+multi-company auth lands later.
+
+Verified locally end-to-end against hand-inserted test tenders (structural
+tiers and the not-eligible/needs-review paths all confirmed correct) — the
+`eligible`/`partial` outcomes specifically depend on Layer 2 succeeding,
+which needs `ANTHROPIC_API_KEY` configured; test those once the key is in
+place.
+
 ## Notes on scope
 
 This is Phase 1 only, per the product plan:

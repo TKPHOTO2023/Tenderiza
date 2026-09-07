@@ -1,12 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { fetchReleases } from "@/lib/ocds-client";
 import { normalizeRelease } from "@/lib/tender-normalize";
+import { recomputeAllMatches } from "@/lib/match-runner";
 
 export interface SyncResult {
   releasesFetched: number;
   tendersCreated: number;
   tendersUpdated: number;
   skipped: number;
+  matchesScored?: number;
+  matchExtractionsRun?: number;
 }
 
 /**
@@ -58,6 +61,19 @@ export async function runTenderSync({ daysBack = 30 }: { daysBack?: number } = {
         success: true,
       },
     });
+
+    // Layer 1 (structural) + capped Layer 2 (AI extraction) matching runs
+    // right after every sync, per Phase 3. Never let a matching problem
+    // (e.g. ANTHROPIC_API_KEY not configured yet) fail the sync itself —
+    // ingestion succeeded regardless.
+    try {
+      const matchResult = await recomputeAllMatches({ maxExtractions: 3 });
+      result.matchesScored = matchResult.scored;
+      result.matchExtractionsRun = matchResult.extractionsRun;
+    } catch {
+      // Matching is best-effort here; failures surface next time someone
+      // views the Matches page or clicks Recompute.
+    }
 
     return result;
   } catch (error) {

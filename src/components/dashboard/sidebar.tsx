@@ -16,8 +16,8 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/profile", label: "Profile", icon: Building2 },
   { href: "/dashboard/documents", label: "Documents", icon: FileText },
-  { href: "/dashboard/tenders", label: "Tenders", icon: FileStack, comingSoon: true },
-  { href: "/dashboard/matches", label: "Matches", icon: Target, comingSoon: true },
+  { href: "/dashboard/tenders", label: "Tenders", icon: FileStack },
+  { href: "/dashboard/matches", label: "Matches", icon: Target },
   { href: "/dashboard/drafts", label: "Drafts", icon: Sparkles, comingSoon: true },
 ];
 
