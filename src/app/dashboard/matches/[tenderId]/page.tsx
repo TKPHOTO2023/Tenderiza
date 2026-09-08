@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MatchStatusBadge } from "@/components/matches/match-status-badge";
 import { formatDate } from "@/lib/format";
-import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, HelpCircle, Info, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, HelpCircle, Info, RefreshCw, FileEdit } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { Match, Tender } from "@prisma/client";
 import type { HardCheck } from "@/lib/match-eligibility";
@@ -31,7 +32,27 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
     fetcher
   );
   const [rechecking, setRechecking] = useState(false);
+  const [generatingDraft, setGeneratingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  async function generateDraft() {
+    setGeneratingDraft(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/drafts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenderId }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.error || "Failed to generate draft");
+      router.push(`/dashboard/drafts/${body.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to generate draft");
+      setGeneratingDraft(false);
+    }
+  }
 
   async function recheck() {
     setRechecking(true);
@@ -76,8 +97,17 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
             <RefreshCw className={cn("h-4 w-4", rechecking && "animate-spin")} />
             {rechecking ? "Re-checking…" : "Re-check"}
           </Button>
+          <Button onClick={generateDraft} disabled={generatingDraft} size="sm">
+            <FileEdit className="h-4 w-4" />
+            {generatingDraft ? "Generating draft…" : "Generate draft"}
+          </Button>
         </div>
       </div>
+
+      <p className="-mt-4 text-xs text-muted-foreground">
+        Only generate a draft for a tender you&apos;ve actually decided to pursue — it produces real
+        documents (compliance summary + technical proposal) using a Claude API call.
+      </p>
 
       {error && (
         <Alert variant="destructive">

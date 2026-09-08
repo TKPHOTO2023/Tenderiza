@@ -301,18 +301,85 @@ tiers and the not-eligible/needs-review paths all confirmed correct) — the
 which needs `ANTHROPIC_API_KEY` configured; test those once the key is in
 place.
 
+## Phase 4: Document drafting
+
+From a tender's **Matches** detail page, "Generate draft" (only ever
+per-tender, never bulk — deliberately, for tenders you've actually decided
+to pursue) produces a first-pass bid document set, shown at
+**Dashboard → Drafts**.
+
+**Critical constraint — this is drafting assistance, not legal sign-off:**
+
+- Only objective, factual company data already held and trusted is ever
+  auto-filled: company name, registration number, VAT number, address,
+  banking details, B-BBEE level, CIDB grading, tax compliance status,
+  contact details.
+- Subjective declarations, yes/no compliance attestations, and anything
+  requiring a signature are **never** auto-filled or pre-checked — they're
+  left visibly blank with a `[TO BE COMPLETED BY BIDDER — REQUIRES
+  SIGN-OFF]` marker instead.
+- Every generated document is watermarked "DRAFT" **in the document
+  itself** (diagonal stamp + header, via `src/lib/draft-pdf.ts` and
+  `src/lib/pdf-form-fill.ts`), not just flagged in the app UI. The Drafts
+  UI itself also makes this unmissable — a red-bordered warning banner and
+  a "DRAFT" badge with an alert icon on every draft, not a small badge.
+
+**Document generation pipeline** (`src/lib/draft-runner.ts`):
+
+1. **Compliance documents** (`src/lib/draft-documents.ts`) — for each of
+   the tender's own PDF documents, attempts to fill it directly via
+   `src/lib/pdf-form-fill.ts` (pdf-lib AcroForm field-filling: text fields
+   matched by keyword against known company data; declaration/signature
+   fields detected by name and marked with the sign-off placeholder
+   instead of guessed). **Only real fillable form fields (AcroForm) are
+   ever filled — there is no OCR or scanned-form filling**, since a wrong
+   auto-fill on a legal document is worse than a clearly-labeled blank
+   one. If none of the tender's documents are machine-fillable, falls back
+   to generating an equivalent compliance-summary PDF from scratch,
+   clearly labeled as a Tenderiza-generated equivalent rather than the
+   official form.
+2. **Technical proposal draft** (`src/lib/technical-proposal.ts`) — Claude
+   (structured output) drafts an approach narrative from the tender's
+   scope summary and the company's categories/capacity/past references.
+   Explicitly instructed not to fabricate relevance: if past references
+   don't obviously relate to this tender's scope, the draft says so
+   (`referenceGapNote`) rather than forcing a connection, and always
+   includes reviewer notes on what the bidder should check.
+3. **Compliance checklist** (`src/lib/compliance-checklist.ts`) — cross-checks
+   Phase 1 document expiry against the tender's closing date, folds in
+   Phase 3's hard-requirement checks, and always lists the standard
+   signature declarations (SBD 4, 6.1, 8, 9) as needing manual attention.
+   Never marks a declaration "done" — only ever `needs_review`.
+
+All generated files are uploaded via the same `src/lib/storage.ts` used for
+Phase 1 documents. A `drafts` row (keyed by `companyId` + `tenderId`, same
+multi-tenant-ready pattern as `matches`) tracks status —
+`GENERATED` / `EDITED` / `FINALIZED` (finalized just means "you've marked it
+ready," not that anything has been submitted anywhere) — plus the document
+references and checklist as JSON. "Regenerate" on a draft's detail page
+re-runs the whole pipeline and overwrites it.
+
+Requires `ANTHROPIC_API_KEY` for the technical proposal step (same as
+Phase 2/3's AI features); the compliance-document step needs no API key and
+was verified independently of it. Costs one real Claude API call per
+generation — hence the per-tender, opt-in "Generate draft" action rather
+than anything automatic.
+
+**Not built, deliberately:** Phase 5 (human review & submission workflow).
+Nothing in Phase 4 implies a draft is ready to submit — that's the entire
+point of the DRAFT watermarking and the sign-off markers.
+
 ## Notes on scope
 
-This is Phase 1 only, per the product plan:
+Phases 1–4 are built, per the product plan:
 
-1. **Company profile onboarding** ✅ this build
-2. Tender ingestion (National Treasury eTenders OCDS API) — not built
-3. Eligibility scoring — not built
-4. Document drafting (SBD forms, proposals) — not built
+1. **Company profile onboarding** ✅
+2. **Tender ingestion** (National Treasury eTenders OCDS API) ✅
+3. **Eligibility scoring** ✅
+4. **Document drafting** (SBD forms, proposals) ✅
 5. Human review & submission — not built
 
-The nav, data model, and API layer are structured so phases 2–5 can be added
-without reshaping what's here: `companies`/`company_documents` already carry
-the typed fields (dates as dates, enums for statuses) an eligibility engine
-would query directly, and the dashboard nav already has placeholder routes
-for Tenders, Matches, and Drafts.
+The nav, data model, and API layer are structured so phase 5 can be added
+without reshaping what's here: `matches` and `drafts` are already keyed by
+`companyId` + `tenderId` even though there's only ever one `Company` row
+today, ready for multi-tenant auth without a schema change.

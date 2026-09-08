@@ -115,6 +115,7 @@ model Company {
   references   CompanyReference[]
   documents    CompanyDocument[]
   matches      Match[]
+  drafts       Draft[]
 
   @@map("companies")
 }
@@ -285,6 +286,7 @@ model Tender {
   lastUpdatedAt DateTime @updatedAt
 
   matches Match[]
+  drafts  Draft[]
 
   @@index([status, closingDate])
   @@index([province])
@@ -346,4 +348,42 @@ model TenderSyncLog {
   errorMessage String?
 
   @@map("tender_sync_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 4: Document drafting
+// ---------------------------------------------------------------------------
+
+enum DraftStatus {
+  GENERATED
+  EDITED
+  FINALIZED // means "the user says this is ready" — NOT submitted anywhere
+}
+
+model Draft {
+  id String @id @default(cuid())
+
+  companyId String
+  tenderId  String
+
+  // Each entry: { label, url, kind: "official_form_filled" | "generated_equivalent" | "technical_proposal" }
+  // Every document referenced here is watermarked DRAFT in its own content,
+  // not just flagged in the UI — see src/lib/draft-documents.ts.
+  documentUrls Json @default("[]")
+
+  // Per-tender checklist: Phase 1 document-expiry status, Phase 3 hard-check
+  // pass/fail/needs_review, and standard SBD declarations still needing the
+  // bidder's own signature — see src/lib/compliance-checklist.ts.
+  complianceChecklist Json @default("[]")
+
+  status DraftStatus @default(GENERATED)
+
+  generatedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tender  Tender  @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, tenderId])
+  @@map("drafts")
 }

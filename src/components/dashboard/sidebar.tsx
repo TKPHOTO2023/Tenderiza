@@ -18,7 +18,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/documents", label: "Documents", icon: FileText },
   { href: "/dashboard/tenders", label: "Tenders", icon: FileStack },
   { href: "/dashboard/matches", label: "Matches", icon: Target },
-  { href: "/dashboard/drafts", label: "Drafts", icon: Sparkles, comingSoon: true },
+  { href: "/dashboard/drafts", label: "Drafts", icon: Sparkles },
 ];
 
 export function Sidebar() {
@@ -49,11 +49,6 @@ export function Sidebar() {
                 <Icon className="h-4 w-4" />
                 {item.label}
               </span>
-              {item.comingSoon && (
-                <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
-                  Soon
-                </span>
-              )}
             </Link>
           );
         })}

@@ -20,7 +20,7 @@ export interface FetchedDocument {
   mediaType: "application/pdf";
 }
 
-async function fetchDocumentAsBase64(url: string): Promise<FetchedDocument | null> {
+async function fetchDocumentBuffer(url: string): Promise<Buffer | null> {
   if (!isAllowedDocumentHost(url)) return null;
   try {
     const res = await fetch(url, { headers: { Accept: "application/pdf" } });
@@ -31,7 +31,7 @@ async function fetchDocumentAsBase64(url: string): Promise<FetchedDocument | nul
     const buffer = Buffer.from(await res.arrayBuffer());
     if (buffer.byteLength > MAX_DOCUMENT_BYTES) return null;
 
-    return { data: buffer.toString("base64"), mediaType: "application/pdf" };
+    return buffer;
   } catch {
     return null;
   }
@@ -41,8 +41,16 @@ async function fetchDocumentAsBase64(url: string): Promise<FetchedDocument | nul
 export async function fetchTenderDocuments(documentUrls: string[], max = 3): Promise<FetchedDocument[]> {
   const results: FetchedDocument[] = [];
   for (const url of documentUrls.slice(0, max)) {
-    const doc = await fetchDocumentAsBase64(url);
-    if (doc) results.push(doc);
+    const buffer = await fetchDocumentBuffer(url);
+    if (buffer) results.push({ data: buffer.toString("base64"), mediaType: "application/pdf" });
   }
   return results;
+}
+
+/**
+ * Fetches a single tender document's raw bytes (for PDF form-filling, which
+ * needs an actual buffer rather than a base64 string for the Claude API).
+ */
+export async function fetchTenderDocumentBuffer(url: string): Promise<Buffer | null> {
+  return fetchDocumentBuffer(url);
 }

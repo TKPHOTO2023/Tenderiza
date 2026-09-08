@@ -53,40 +53,19 @@ export default function DashboardOverviewPage() {
             </CardContent>
           </Card>
         </Link>
-        <ComingSoonCard
-          icon={Sparkles}
-          title="Drafts"
-          description="Auto-populated SBD forms and proposal drafts will live here."
-          href="/dashboard/drafts"
-        />
+        <Link href="/dashboard/drafts">
+          <Card className="h-full transition-colors hover:bg-accent/50">
+            <CardHeader>
+              <Sparkles className="mb-1 h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Drafts</CardTitle>
+              <CardDescription>First-pass bid documents for tenders you&apos;re pursuing.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-xs font-medium text-primary">View drafts →</span>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
     </div>
-  );
-}
-
-function ComingSoonCard({
-  icon: Icon,
-  title,
-  description,
-  href,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  href: string;
-}) {
-  return (
-    <Link href={href}>
-      <Card className="h-full transition-colors hover:bg-accent/50">
-        <CardHeader>
-          <Icon className="mb-1 h-5 w-5 text-primary" />
-          <CardTitle className="text-base">{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <span className="text-xs font-medium text-muted-foreground">Coming soon</span>
-        </CardContent>
-      </Card>
-    </Link>
   );
 }
