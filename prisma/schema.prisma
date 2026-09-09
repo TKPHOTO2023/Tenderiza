@@ -354,10 +354,21 @@ model TenderSyncLog {
 // Phase 4: Document drafting
 // ---------------------------------------------------------------------------
 
+// Phase 5 replaces the original GENERATED/EDITED/FINALIZED lifecycle with an
+// explicit review-and-submission gate. DRAFT is the Phase 4 starting point;
+// everything from UNDER_REVIEW onward is Phase 5 — see
+// src/lib/submission-workflow.ts for the only place transitions happen.
 enum DraftStatus {
-  GENERATED
-  EDITED
-  FINALIZED // means "the user says this is ready" — NOT submitted anywhere
+  DRAFT // generated (or since edited/regenerated), not yet sent for review
+  UNDER_REVIEW // human is actively reviewing the checklist + documents
+  APPROVED // human explicitly confirmed checklist + pricing were reviewed — still NOT submitted anywhere
+  SUBMITTED // human confirms they submitted this for real, outside the app
+  NOT_SUBMITTING // human decided not to pursue this one after all
+}
+
+enum SubmissionMethod {
+  MANUAL // submitted outside the app (portal upload, physical bid box, etc.) — the default, always available
+  ELECTRONIC // a confirmed, wired-up direct-submission integration for a specific portal — none built yet
 }
 
 model Draft {
@@ -376,14 +387,55 @@ model Draft {
   // bidder's own signature — see src/lib/compliance-checklist.ts.
   complianceChecklist Json @default("[]")
 
-  status DraftStatus @default(GENERATED)
+  status DraftStatus @default(DRAFT)
+
+  // Phase 5: review & submission gate. Never set by anything other than an
+  // explicit, in-the-moment human action — see src/lib/submission-workflow.ts.
+  reviewStartedAt DateTime?
+
+  pricingConfirmed   Boolean   @default(false) // human explicitly confirmed final pricing was checked — never calculated by the app
+  pricingConfirmedAt DateTime?
+  pricingNotes       String?
+
+  approvedAt DateTime? // requires pricingConfirmed=true at the moment of approval
+
+  briefingAttended Boolean @default(false) // human marks the tender's compulsory briefing (if any) as attended
+
+  submittedAt        DateTime?
+  submissionMethod   SubmissionMethod?
+  submissionNotes    String?
+
+  notSubmittingReason String?
 
   generatedAt DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  tender  Tender  @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  company    Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  tender     Tender           @relation(fields: [tenderId], references: [id], onDelete: Cascade)
+  statusLogs DraftStatusLog[]
 
   @@unique([companyId, tenderId])
   @@map("drafts")
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: Review, approval & submission audit trail
+// ---------------------------------------------------------------------------
+
+// One row per status transition, forever — the record a company would show
+// to prove their own process was diligent if ever questioned. Nothing here
+// is ever updated or deleted, only appended to.
+model DraftStatusLog {
+  id String @id @default(cuid())
+
+  draftId    String
+  fromStatus DraftStatus?
+  toStatus   DraftStatus
+  note       String?
+  createdAt  DateTime     @default(now())
+
+  draft Draft @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId, createdAt])
+  @@map("draft_status_logs")
 }

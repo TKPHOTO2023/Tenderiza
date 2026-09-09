@@ -6,12 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDrafts } from "@/lib/use-drafts";
 import { formatDate } from "@/lib/format";
 import { AlertTriangle } from "lucide-react";
-
-const STATUS_LABEL: Record<string, string> = {
-  GENERATED: "Generated",
-  EDITED: "Edited",
-  FINALIZED: "Marked ready (not submitted)",
-};
+import { DraftStatusBadge } from "@/components/drafts/status-badge";
 
 export default function DraftsPage() {
   const { drafts, isLoading } = useDrafts();
@@ -22,7 +17,11 @@ export default function DraftsPage() {
         <h1 className="text-2xl font-semibold">Drafts</h1>
         <p className="text-sm text-muted-foreground">
           First-pass bid documents for tenders you&apos;ve decided to pursue — generated from a
-          tender&apos;s Match detail page. Every draft needs your review before it&apos;s ready.
+          tender&apos;s Match detail page. Every draft needs your review before it&apos;s ready — head to{" "}
+          <Link href="/dashboard/review" className="font-medium text-primary underline">
+            Review &amp; submission
+          </Link>{" "}
+          to take it from here.
         </p>
       </div>
 
@@ -56,7 +55,7 @@ export default function DraftsPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   <span>Closes: {formatDate(draft.tender.closingDate)}</span>
-                  <span>Status: {STATUS_LABEL[draft.status]}</span>
+                  <DraftStatusBadge status={draft.status} />
                   <span>Generated: {new Date(draft.generatedAt).toLocaleDateString("en-ZA")}</span>
                 </div>
               </CardContent>

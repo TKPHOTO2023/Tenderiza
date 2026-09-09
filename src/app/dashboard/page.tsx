@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { CompletenessWidget } from "@/components/dashboard/completeness-widget";
 import { useCompany } from "@/lib/use-company";
-import { FileStack, Sparkles, Target } from "lucide-react";
+import { ClipboardCheck, FileStack, Sparkles, Target } from "lucide-react";
 
 export default function DashboardOverviewPage() {
   const { company, isLoading } = useCompany();
@@ -26,7 +26,7 @@ export default function DashboardOverviewPage() {
 
       <CompletenessWidget company={company} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/dashboard/tenders">
           <Card className="h-full transition-colors hover:bg-accent/50">
             <CardHeader>
@@ -62,6 +62,18 @@ export default function DashboardOverviewPage() {
             </CardHeader>
             <CardContent>
               <span className="text-xs font-medium text-primary">View drafts →</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/dashboard/review">
+          <Card className="h-full transition-colors hover:bg-accent/50">
+            <CardHeader>
+              <ClipboardCheck className="mb-1 h-5 w-5 text-primary" />
+              <CardTitle className="text-base">Review &amp; submission</CardTitle>
+              <CardDescription>Approve drafts and confirm what&apos;s actually been submitted.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <span className="text-xs font-medium text-primary">Go to review →</span>
             </CardContent>
           </Card>
         </Link>

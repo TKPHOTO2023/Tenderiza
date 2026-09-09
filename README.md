@@ -353,11 +353,11 @@ to pursue) produces a first-pass bid document set, shown at
 
 All generated files are uploaded via the same `src/lib/storage.ts` used for
 Phase 1 documents. A `drafts` row (keyed by `companyId` + `tenderId`, same
-multi-tenant-ready pattern as `matches`) tracks status —
-`GENERATED` / `EDITED` / `FINALIZED` (finalized just means "you've marked it
-ready," not that anything has been submitted anywhere) — plus the document
-references and checklist as JSON. "Regenerate" on a draft's detail page
-re-runs the whole pipeline and overwrites it.
+multi-tenant-ready pattern as `matches`) holds the document references and
+checklist as JSON, plus the Phase 5 review/submission status below.
+"Regenerate" on a draft's detail page re-runs the whole pipeline and
+overwrites the documents and checklist — see Phase 5 for what that does to
+review status.
 
 Requires `ANTHROPIC_API_KEY` for the technical proposal step (same as
 Phase 2/3's AI features); the compliance-document step needs no API key and
@@ -365,21 +365,101 @@ was verified independently of it. Costs one real Claude API call per
 generation — hence the per-tender, opt-in "Generate draft" action rather
 than anything automatic.
 
-**Not built, deliberately:** Phase 5 (human review & submission workflow).
-Nothing in Phase 4 implies a draft is ready to submit — that's the entire
-point of the DRAFT watermarking and the sign-off markers.
+## Phase 5: Review & submission
+
+**Non-negotiable constraint: nothing in Tenderiza ever submits a bid, signs
+a declaration, or takes any externally-visible action on its own.** Every
+status change described below is the direct result of one explicit click
+by a human, for one specific draft, in the moment — there is no bulk
+"approve all" or "submit all," no scheduled job, and no automatic retry.
+The only electronic submission method wired up is none: `submissionMethod`
+has an `ELECTRONIC` value reserved in the schema for a future, explicitly
+confirmed portal integration, but the API rejects it today
+(`src/app/api/drafts/[id]/workflow/route.ts`) — `MANUAL` (the human did it
+themselves, outside the app, and is just recording that here) is the only
+path that actually works, by design.
+
+**Status lifecycle** (`DraftStatus`, replacing Phase 4's simpler
+GENERATED/EDITED/FINALIZED): `DRAFT` → `UNDER_REVIEW` → `APPROVED` →
+`SUBMITTED`, with `NOT_SUBMITTING` reachable from any non-terminal state for
+a tender the company decides not to pursue after all. `src/lib/submission-
+workflow.ts` is the *only* place a transition is allowed to happen — it
+enforces a strict from→to table (`ALLOWED_TRANSITIONS`) and refuses
+anything else with a 409. `SUBMITTED` is terminal: a real-world submission
+is never silently undone by the app.
+
+- **Approval gate:** moving to `APPROVED` requires the API call to include
+  `checklistConfirmed: true` **and** `pricingConfirmed: true` in that same
+  request — confirmed fresh at the moment of approval, not inherited from an
+  earlier click. The dashboard's "Approve" button is a dialog with two
+  checkboxes that must both be ticked before the button even enables.
+  Approved still only means "a human reviewed this" — not submitted
+  anywhere.
+- **Pricing:** `pricingConfirmed`/`pricingConfirmedAt`/`pricingNotes` are
+  settable independently of approval (a checkbox on the draft detail page)
+  so it's visible on the review dashboard before the human is ready to
+  approve. Tenderiza never calculates, suggests, or displays a suggested
+  price anywhere in this flow — it only ever records that the human checked
+  their own number.
+- **Submission:** the default and only working path is manual — the human
+  marks a draft `SUBMITTED` with a timestamp, method, and optional notes
+  once they've actually submitted it for real (portal upload, physical bid
+  box, etc). Nothing in the codebase calls out to any procuring entity's
+  system.
+- **Regenerating a draft resets its review status.** Since regenerating
+  produces different documents, any prior review/approval no longer
+  reflects what's actually in front of the human — `src/lib/draft-
+  runner.ts` resets the status back to `DRAFT` (never silently keeps an
+  approval attached to different paperwork) and logs the reset to the audit
+  trail. A draft already `SUBMITTED` is left alone, since that already
+  happened outside the app.
+
+**Audit trail:** every transition — including the automatic reset on
+regenerate — is appended to `draft_status_logs` (`fromStatus`, `toStatus`,
+an optional note, a timestamp) in the same database transaction as the
+status change, so the log can never drift from what actually happened.
+Rows are never updated or deleted. Shown at the bottom of each draft's
+detail page and readable via `GET /api/drafts/[id]/audit`.
+
+**Reminders** (`src/lib/reminders.ts`, `GET /api/reminders`) are computed
+fresh on every page load — there is no background job, no polling, and no
+email sending set up in this project yet, so these are in-app only for now.
+Three kinds, surfaced together on **Dashboard → Review & submission** and
+per-tender on each draft's detail page:
+1. A draft `APPROVED` but not yet `SUBMITTED`, within 14 days of its
+   tender's closing date.
+2. A tender with a compulsory briefing (from Phase 3's extraction) that
+   isn't yet marked attended (`briefingAttended`), coming up within 14 days
+   — briefing dates are free text pulled from a PDF, so this is a
+   best-effort `Date` parse that degrades to a plain "not yet attended"
+   notice rather than a day count if it can't be parsed.
+3. A Phase 1 document that will expire before the closing date of *any*
+   tender the company has a computed Match against (not only ones with a
+   draft) — this one deliberately reuses Phase 3's `matches` table rather
+   than being scoped to drafts, since the spec asks about tenders "you're
+   matched to."
+
+**Review dashboard** (`/dashboard/review`) lists every draft not yet
+`SUBMITTED`/`NOT_SUBMITTING`, worst-deadline-first, each showing its closing
+urgency badge, how many checklist items are still unresolved, and whether
+pricing has been confirmed — clicking through to a draft's detail page is
+where the actual review/approve/submit actions and the checklist, documents,
+briefing checkbox, and audit trail all live.
 
 ## Notes on scope
 
-Phases 1–4 are built, per the product plan:
+All five phases of the original product plan are built:
 
 1. **Company profile onboarding** ✅
 2. **Tender ingestion** (National Treasury eTenders OCDS API) ✅
 3. **Eligibility scoring** ✅
 4. **Document drafting** (SBD forms, proposals) ✅
-5. Human review & submission — not built
+5. **Human review & submission** ✅ — manual submission confirmation only;
+   no procuring-entity portal integration has been built, and none should
+   be added without first confirming that specific portal genuinely
+   supports it.
 
-The nav, data model, and API layer are structured so phase 5 can be added
-without reshaping what's here: `matches` and `drafts` are already keyed by
-`companyId` + `tenderId` even though there's only ever one `Company` row
-today, ready for multi-tenant auth without a schema change.
+`matches` and `drafts` are keyed by `companyId` + `tenderId` even though
+there's only ever one `Company` row today (see
+`src/lib/current-company.ts`), ready for multi-tenant auth without a schema
+change.

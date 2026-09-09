@@ -54,6 +54,17 @@ export async function generateDraft(tenderId: string) {
 
   const checklist = buildComplianceChecklist(company, tender, hardChecks);
 
+  const existing = await prisma.draft.findUnique({
+    where: { companyId_tenderId: { companyId: company.id, tenderId } },
+  });
+
+  // Regenerating changes the actual document content, so any prior review or
+  // approval no longer reflects what's in front of the human — reset the
+  // Phase 5 workflow back to DRAFT rather than silently carrying an approval
+  // over to different documents. A submission already made for real is never
+  // reset, since that already happened outside the app.
+  const resetWorkflow = existing && existing.status !== "SUBMITTED";
+
   const draft = await prisma.draft.upsert({
     where: { companyId_tenderId: { companyId: company.id, tenderId } },
     create: {
@@ -61,15 +72,34 @@ export async function generateDraft(tenderId: string) {
       tenderId,
       documentUrls: uploaded as object,
       complianceChecklist: checklist as object,
-      status: "GENERATED",
+      status: "DRAFT",
     },
     update: {
       documentUrls: uploaded as object,
       complianceChecklist: checklist as object,
-      status: "GENERATED",
       generatedAt: new Date(),
+      ...(resetWorkflow
+        ? {
+            status: "DRAFT",
+            reviewStartedAt: null,
+            pricingConfirmed: false,
+            pricingConfirmedAt: null,
+            approvedAt: null,
+          }
+        : {}),
     },
   });
+
+  if (existing && resetWorkflow && existing.status !== "DRAFT") {
+    await prisma.draftStatusLog.create({
+      data: {
+        draftId: draft.id,
+        fromStatus: existing.status,
+        toStatus: "DRAFT",
+        note: "Regenerated — prior review/approval reset because the documents changed.",
+      },
+    });
+  }
 
   return draft;
 }

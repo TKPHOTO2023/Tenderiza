@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Building2,
+  ClipboardCheck,
   FileStack,
   FileText,
   LayoutDashboard,
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/tenders", label: "Tenders", icon: FileStack },
   { href: "/dashboard/matches", label: "Matches", icon: Target },
   { href: "/dashboard/drafts", label: "Drafts", icon: Sparkles },
+  { href: "/dashboard/review", label: "Review & submission", icon: ClipboardCheck },
 ];
 
 export function Sidebar() {
