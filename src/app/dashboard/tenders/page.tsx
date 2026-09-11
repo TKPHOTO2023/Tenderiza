@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { SyncButton } from "@/components/tenders/sync-button";
 import { ClosingBadge } from "@/components/tenders/closing-badge";
+import { ProcurementTypeBadge } from "@/components/tenders/procurement-type-badge";
 import { useTenders } from "@/lib/use-tenders";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { Search } from "lucide-react";
@@ -116,7 +117,10 @@ export default function TendersPage() {
               <CardContent className="grid gap-2 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <p className="font-medium leading-snug">{tender.title || "Untitled tender"}</p>
-                  <ClosingBadge closingDate={tender.closingDate} />
+                  <div className="flex shrink-0 items-center gap-2">
+                    <ProcurementTypeBadge type={tender.procurementType} />
+                    <ClosingBadge closingDate={tender.closingDate} />
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   {tender.buyerName && <span>{tender.buyerName}</span>}

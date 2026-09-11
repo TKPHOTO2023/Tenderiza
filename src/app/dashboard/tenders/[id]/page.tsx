@@ -8,12 +8,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ClosingBadge } from "@/components/tenders/closing-badge";
+import { ProcurementTypeBadge } from "@/components/tenders/procurement-type-badge";
 import { DocumentRow } from "@/components/tenders/document-row";
 import { RequirementsSummary } from "@/components/tenders/requirements-summary";
 import { CostEstimate } from "@/components/tenders/cost-estimate";
+import { PricingScheduleTable } from "@/components/tenders/pricing-schedule-table";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import type { Tender } from "@prisma/client";
+import type { ExtractedRequirements } from "@/lib/tender-extraction";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -37,7 +40,10 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
           <h1 className="text-2xl font-semibold">{tender.title || "Untitled tender"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">OCID: {tender.ocid}</p>
         </div>
-        <ClosingBadge closingDate={tender.closingDate} />
+        <div className="flex shrink-0 items-center gap-2">
+          <ProcurementTypeBadge type={tender.procurementType} />
+          <ClosingBadge closingDate={tender.closingDate} />
+        </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -49,6 +55,10 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
             <Row label="Buyer" value={tender.buyerName} />
             <Row label="Province" value={tender.province} />
             <Row label="Category" value={tender.category} />
+            <Row
+              label="Procurement type"
+              value={tender.procurementType !== "UNKNOWN" ? tender.procurementType : "Not yet determined"}
+            />
             <Row label="Status" value={tender.status} />
             <Row label="Published" value={formatDate(tender.publishedDate)} />
             <Row label="Closing date" value={formatDate(tender.closingDate)} />
@@ -95,6 +105,12 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
         <RequirementsSummary tender={tender} onUpdated={(updated) => mutate(updated, { revalidate: false })} />
         <CostEstimate tender={tender} onUpdated={(updated) => mutate(updated, { revalidate: false })} />
       </div>
+
+      {tender.pricingSchedule != null &&
+        Array.isArray(tender.pricingSchedule) &&
+        tender.pricingSchedule.length > 0 && (
+          <PricingScheduleTable items={tender.pricingSchedule as unknown as ExtractedRequirements["pricingScheduleItems"]} />
+        )}
 
       {tender.description && (
         <Card>

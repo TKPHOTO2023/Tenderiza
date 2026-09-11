@@ -235,6 +235,15 @@ enum TenderStatus {
   UNKNOWN
 }
 
+// Phase 6: classified from the tender document's own wording/structure, not
+// guessed from value alone — see src/lib/tender-extraction.ts.
+enum ProcurementType {
+  RFQ // request for quotation — typically below a Rand-value threshold
+  RFP // formal competitive bid (includes standard SBD-form tenders)
+  RFI // request for information — no priced bid response needed
+  UNKNOWN // not yet extracted, or extraction couldn't tell
+}
+
 model Tender {
   id String @id @default(cuid())
 
@@ -281,6 +290,14 @@ model Tender {
   // above which are narrative and re-generated freely.
   extractedRequirements   Json?
   requirementsExtractedAt DateTime?
+
+  // Phase 6: procurement type (RFQ/RFP/RFI) and, when the tender includes
+  // one, its itemized pricing schedule — both extracted in the same Layer 2
+  // AI pass as extractedRequirements (see src/lib/tender-extraction.ts).
+  // Pricing schedule rows never carry a price — line description/quantity/
+  // unit only, so Phase 4 can render the bidder's own blank price cells.
+  procurementType ProcurementType @default(UNKNOWN)
+  pricingSchedule Json? // PricingScheduleItem[] — see src/lib/tender-extraction.ts
 
   firstSeenAt   DateTime @default(now())
   lastUpdatedAt DateTime @updatedAt

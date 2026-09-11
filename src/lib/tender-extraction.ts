@@ -28,6 +28,32 @@ export const ExtractedRequirementsSchema = z.object({
   extractionConfidence: z
     .enum(["low", "medium", "high"])
     .describe("How confident this extraction is, given how much of the tender document was readable"),
+  procurementType: z
+    .enum(["RFQ", "RFP", "RFI", "UNKNOWN"])
+    .describe(
+      "Classify from the document's own wording and structure: RFQ (request for quotation, usually simple " +
+        "and below a Rand-value threshold), RFP (formal competitive bid — standard SBD forms, technical " +
+        "and price evaluation), RFI (request for information — no priced bid expected). UNKNOWN if the " +
+        "document doesn't make this clear. Never infer this from the estimated value alone."
+    ),
+  procurementTypeRationale: z
+    .string()
+    .nullable()
+    .describe("One sentence citing what in the document indicated this procurement type, or null if UNKNOWN"),
+  pricingScheduleItems: z
+    .array(
+      z.object({
+        lineNumber: z.string().nullable().describe("Item/line number exactly as stated, or null"),
+        description: z.string().describe("The item or service description exactly as stated"),
+        quantity: z.number().nullable().describe("Quantity exactly as stated, or null if not given"),
+        unitOfMeasure: z.string().nullable().describe('Unit exactly as stated (e.g. "each", "hours", "m2"), or null'),
+      })
+    )
+    .describe(
+      "The tender's own itemized pricing/quantity schedule, line by line, if one is included in the documents. " +
+        "Empty array if no such schedule is present. NEVER include a price or invented total — pricing is always " +
+        "the bidder's own commercial decision, not something to extract, estimate, or guess."
+    ),
 });
 
 export type ExtractedRequirements = z.infer<typeof ExtractedRequirementsSchema>;
@@ -63,7 +89,10 @@ export async function extractTenderRequirements(tender: Tender): Promise<Extract
       "You extract specific eligibility requirements from South African government tender documents for an " +
       "automated eligibility check. Be precise and literal — quote the document's own wording for grades/levels. " +
       "Use null for anything not explicitly stated in the document. Never infer or guess a requirement that isn't " +
-      "written down, even if it seems typical for this kind of tender.",
+      "written down, even if it seems typical for this kind of tender. You also classify the procurement type " +
+      "(RFQ/RFP/RFI) from the document's own wording and structure, and transcribe any itemized pricing/quantity " +
+      "schedule it contains. NEVER invent, estimate, or fill in a price anywhere — pricing schedule items carry " +
+      "only description/quantity/unit, exactly as stated; leave a field null rather than guess.",
     messages: [
       {
         role: "user",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { MatchStatusBadge } from "@/components/matches/match-status-badge";
+import { ProcurementTypeBadge } from "@/components/tenders/procurement-type-badge";
 import { useMatches } from "@/lib/use-matches";
 import { formatDate } from "@/lib/format";
 import { RefreshCw } from "lucide-react";
@@ -60,7 +61,10 @@ export default function MatchesPage() {
               <CardContent className="grid gap-2 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <p className="font-medium leading-snug">{match.tender.title || "Untitled tender"}</p>
-                  <MatchStatusBadge status={match.status} />
+                  <div className="flex shrink-0 items-center gap-2">
+                    <ProcurementTypeBadge type={match.tender.procurementType} />
+                    <MatchStatusBadge status={match.status} />
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                   {match.tender.buyerName && <span>{match.tender.buyerName}</span>}

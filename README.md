@@ -446,14 +446,51 @@ pricing has been confirmed — clicking through to a draft's detail page is
 where the actual review/approve/submit actions and the checklist, documents,
 briefing checkbox, and audit trail all live.
 
+## Phase 6 (in progress): procurement-type intelligence
+
+**Procurement type classification** (`RFQ` / `RFP` / `RFI` / `UNKNOWN`) is
+now extracted in the same Layer 2 AI pass as Phase 3's other requirements
+(`src/lib/tender-extraction.ts`) — classified from the tender document's own
+wording and structure, never guessed from its estimated value alone. Shown
+as a small badge on the Tenders and Matches list/detail pages
+(`src/components/tenders/procurement-type-badge.tsx`).
+
+**Structured pricing schedule**: when a tender includes its own itemized
+pricing/quantity table, it's transcribed line-by-line (description/quantity/
+unit only — the AI is explicitly told never to invent, estimate, or fill in
+a price anywhere) and shown read-only on the tender and match detail pages
+(`src/components/tenders/pricing-schedule-table.tsx`).
+
+**Phase 4 drafting now branches on procurement type** (`src/lib/draft-runner.ts`):
+- **RFQ** — skips the SBD-form/technical-proposal pipeline and generates a
+  formal quotation draft instead (`src/lib/draft-documents.ts` →
+  `generateRfqQuotationDocument`): company details plus the tender's own
+  pricing schedule laid out with every price cell marked
+  `[BIDDER TO COMPLETE]` — never pre-filled.
+- **RFI** — generates a lighter capability-summary-plus-references document
+  (`generateRfiResponseDocument`) rather than forcing a request-for-information
+  through the full compliance/pricing pipeline built for priced bids.
+- **RFP/UNKNOWN** — unchanged: the existing SBD-form-filling + technical
+  proposal flow from Phase 4.
+
+Existing tenders default to `UNKNOWN` until their next Layer 2 extraction
+runs (manual "Re-check" on a Match, or the next sync/cron pass) — that's why
+older tenders won't show a type badge until re-extracted.
+
+**Still to come in Phase 6** (being built incrementally, one piece at a
+time, per how this phase was scoped): company branding + letterhead on
+generated documents, in-platform document preview, a B-BBEE preference-point
+calculator, and a clarification-question generator.
+
 ## Notes on scope
 
-All five phases of the original product plan are built:
+All five phases of the original product plan are built, with Phase 6
+refinements landing incrementally:
 
 1. **Company profile onboarding** ✅
 2. **Tender ingestion** (National Treasury eTenders OCDS API) ✅
-3. **Eligibility scoring** ✅
-4. **Document drafting** (SBD forms, proposals) ✅
+3. **Eligibility scoring** ✅ (now also classifying procurement type)
+4. **Document drafting** (SBD forms, proposals, RFQ quotations, RFI responses) ✅
 5. **Human review & submission** ✅ — manual submission confirmation only;
    no procuring-entity portal integration has been built, and none should
    be added without first confirming that specific portal genuinely

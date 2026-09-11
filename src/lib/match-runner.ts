@@ -44,6 +44,8 @@ export async function computeMatchForTender(
         data: {
           extractedRequirements: { ...requirements, documentsAnalyzed },
           requirementsExtractedAt: new Date(),
+          procurementType: requirements.procurementType,
+          pricingSchedule: requirements.pricingScheduleItems as object,
         },
       });
     } catch (error) {

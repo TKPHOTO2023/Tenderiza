@@ -45,10 +45,18 @@ function drawWatermark(page: PDFPage, font: PDFFont) {
   });
 }
 
+export interface DraftPdfTable {
+  headers: string[];
+  rows: string[][];
+}
+
 export interface DraftPdfSection {
   heading: string;
-  body: string; // may contain \n for line breaks
+  body?: string; // may contain \n for line breaks
+  table?: DraftPdfTable; // renders instead of body when present
 }
+
+const TABLE_ROW_HEIGHT = 16;
 
 /**
  * Builds a simple, clearly-watermarked multi-page PDF from a title and a
@@ -85,7 +93,37 @@ export async function buildDraftPdf(title: string, sections: DraftPdfSection[]):
     page.drawText(section.heading, { x: PAGE_MARGIN, y, size: 13, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
     y -= 20;
 
-    const lines = wrapText(section.body, regularFont, 10.5, contentWidth);
+    if (section.table) {
+      const colWidth = contentWidth / section.table.headers.length;
+      ensureSpace(TABLE_ROW_HEIGHT + 4);
+      section.table.headers.forEach((header, i) => {
+        page.drawText(header, { x: PAGE_MARGIN + i * colWidth, y, size: 9.5, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
+      });
+      page.drawLine({
+        start: { x: PAGE_MARGIN, y: y - 4 },
+        end: { x: PAGE_MARGIN + contentWidth, y: y - 4 },
+        thickness: 0.5,
+        color: rgb(0.6, 0.6, 0.6),
+      });
+      y -= TABLE_ROW_HEIGHT;
+
+      for (const row of section.table.rows) {
+        ensureSpace(TABLE_ROW_HEIGHT);
+        row.forEach((cell, i) => {
+          const colMax = colWidth - 6;
+          const text =
+            regularFont.widthOfTextAtSize(cell, 9) > colMax
+              ? `${cell.slice(0, Math.max(4, Math.floor((colMax / regularFont.widthOfTextAtSize(cell, 9)) * cell.length)))}…`
+              : cell;
+          page.drawText(text, { x: PAGE_MARGIN + i * colWidth, y, size: 9, font: regularFont, color: rgb(0.2, 0.2, 0.2) });
+        });
+        y -= TABLE_ROW_HEIGHT;
+      }
+      y -= 10;
+      continue;
+    }
+
+    const lines = wrapText(section.body ?? "", regularFont, 10.5, contentWidth);
     for (const line of lines) {
       ensureSpace(15);
       page.drawText(line, { x: PAGE_MARGIN, y, size: 10.5, font: regularFont, color: rgb(0.2, 0.2, 0.2) });

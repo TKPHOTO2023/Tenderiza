@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MatchStatusBadge } from "@/components/matches/match-status-badge";
+import { ProcurementTypeBadge } from "@/components/tenders/procurement-type-badge";
+import { PricingScheduleTable } from "@/components/tenders/pricing-schedule-table";
 import { formatDate } from "@/lib/format";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, HelpCircle, Info, RefreshCw, FileEdit } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -92,6 +94,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ProcurementTypeBadge type={match.tender.procurementType} />
           <MatchStatusBadge status={match.status} />
           <Button onClick={recheck} disabled={rechecking} variant="outline" size="sm">
             <RefreshCw className={cn("h-4 w-4", rechecking && "animate-spin")} />
@@ -171,6 +174,14 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
           </CardContent>
         </Card>
       )}
+
+      {match.tender.pricingSchedule != null &&
+        Array.isArray(match.tender.pricingSchedule) &&
+        match.tender.pricingSchedule.length > 0 && (
+          <PricingScheduleTable
+            items={match.tender.pricingSchedule as unknown as ExtractedRequirements["pricingScheduleItems"]}
+          />
+        )}
 
       <Link href={`/dashboard/tenders/${match.tenderId}`}>
         <Button variant="outline" size="sm">

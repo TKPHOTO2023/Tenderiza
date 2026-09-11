@@ -1,13 +1,14 @@
-import type { Company, Tender } from "@prisma/client";
+import type { Company, CompanyReference, Tender } from "@prisma/client";
 import { fetchTenderDocumentBuffer } from "@/lib/tender-documents";
 import { fillTenderPdfForm } from "@/lib/pdf-form-fill";
 import { buildDraftPdf, type DraftPdfSection } from "@/lib/draft-pdf";
 import { BBBEE_LEVELS } from "@/lib/constants";
+import type { ExtractedRequirements } from "@/lib/tender-extraction";
 
 export interface DraftDocument {
   label: string;
   buffer: Buffer;
-  kind: "official_form_filled" | "generated_equivalent";
+  kind: "official_form_filled" | "generated_equivalent" | "rfq_quotation" | "rfi_response";
   filename: string;
 }
 
@@ -96,4 +97,117 @@ async function buildEquivalentComplianceDocument(company: Company, tender: Tende
   ];
 
   return buildDraftPdf(`Compliance Summary — ${tender.title || tender.ocid}`, sections);
+}
+
+type PricingScheduleItem = ExtractedRequirements["pricingScheduleItems"][number];
+
+/**
+ * RFQ path (Phase 6): a formal quotation document with the company's own
+ * letterhead-equivalent details and the tender's own pricing/quantity
+ * schedule laid out for the bidder to price themselves — every price cell
+ * is left `[BIDDER TO COMPLETE]`, never pre-filled or estimated.
+ */
+export async function generateRfqQuotationDocument(
+  company: Company,
+  tender: Tender,
+  pricingSchedule: PricingScheduleItem[]
+): Promise<DraftDocument> {
+  const bbbeeLabel = company.bbbeeLevel
+    ? BBBEE_LEVELS.find((l) => l.value === company.bbbeeLevel)?.label ?? company.bbbeeLevel
+    : "Not set in profile";
+
+  const sections: DraftPdfSection[] = [
+    {
+      heading: "Note",
+      body:
+        "This is a Tenderiza-generated quotation draft for a Request for Quotation (RFQ). It is not the " +
+        "procuring entity's own form — check whether they supplied their own quotation template and use " +
+        "that instead if so. All prices below are left blank on purpose: pricing is always your own " +
+        "commercial decision, never generated or suggested by Tenderiza.",
+    },
+    {
+      heading: "Quoting company",
+      body: [
+        `Company name: ${company.tradingName || company.companyName || "—"}`,
+        `Registration number: ${company.registrationNumber || "—"}`,
+        `VAT number: ${company.vatNumber || "—"}`,
+        `Physical address: ${[company.addressLine1, company.addressLine2, company.city, company.postalCode].filter(Boolean).join(", ") || "—"}`,
+        `Contact person: ${company.contactPersonName || "—"}`,
+        `Contact email: ${company.contactEmail || "—"}`,
+        `Contact phone: ${company.contactPhone || "—"}`,
+        `B-BBEE level: ${bbbeeLabel}`,
+      ].join("\n"),
+    },
+    pricingSchedule.length > 0
+      ? {
+          heading: "Pricing schedule — complete unit prices yourself",
+          table: {
+            headers: ["#", "Description", "Qty", "Unit", "Unit price (excl. VAT)", "Total"],
+            rows: pricingSchedule.map((item, i) => [
+              item.lineNumber ?? String(i + 1),
+              item.description,
+              item.quantity != null ? String(item.quantity) : "—",
+              item.unitOfMeasure ?? "—",
+              "[BIDDER TO COMPLETE]",
+              "[BIDDER TO COMPLETE]",
+            ]),
+          },
+        }
+      : {
+          heading: "Pricing schedule",
+          body: "No itemized pricing schedule was found in this tender's documents — price against the tender's stated scope of work directly, using the procuring entity's own required format if one was supplied.",
+        },
+    {
+      heading: "Declaration and sign-off",
+      body: "[TO BE COMPLETED BY BIDDER — REQUIRES SIGN-OFF]\n\nAny declaration this RFQ requires (validity period, authorization to sign, etc.) must be completed and signed by you — it is not reproduced here.",
+    },
+  ];
+
+  const buffer = await buildDraftPdf(`Quotation (Draft) — ${tender.title || tender.ocid}`, sections);
+  return { label: "Quotation (draft)", buffer, kind: "rfq_quotation", filename: "quotation-draft.pdf" };
+}
+
+/**
+ * RFI path (Phase 6): these don't need a priced bid — a lighter capability
+ * summary + relevant past references is enough, rather than forcing an RFI
+ * through the full SBD-form/pricing pipeline built for RFQs and RFPs.
+ */
+export async function generateRfiResponseDocument(
+  company: Company & { references: CompanyReference[] },
+  tender: Tender
+): Promise<DraftDocument> {
+  const referencesText =
+    company.references.length > 0
+      ? company.references
+          .map((r) => `- ${r.clientName} (${r.year ?? "year unknown"}): ${r.projectDescription}`)
+          .join("\n")
+      : "No past references on file yet — add some in your company profile to strengthen this response.";
+
+  const sections: DraftPdfSection[] = [
+    {
+      heading: "Note",
+      body:
+        "This tender is a Request for Information (RFI) — it's asking the market for input, not a priced " +
+        "bid. This draft is a lighter capability summary rather than a full compliance/pricing submission.",
+    },
+    {
+      heading: "Company overview",
+      body: [
+        `Company name: ${company.tradingName || company.companyName || "—"}`,
+        `Registration number: ${company.registrationNumber || "—"}`,
+        `Contact person: ${company.contactPersonName || "—"}`,
+        `Contact email: ${company.contactEmail || "—"}`,
+        `Contact phone: ${company.contactPhone || "—"}`,
+        "",
+        company.description || "(No company description on file — add one in your profile.)",
+      ].join("\n"),
+    },
+    {
+      heading: "Relevant past experience",
+      body: referencesText,
+    },
+  ];
+
+  const buffer = await buildDraftPdf(`RFI Response (Draft) — ${tender.title || tender.ocid}`, sections);
+  return { label: "RFI response (draft)", buffer, kind: "rfi_response", filename: "rfi-response-draft.pdf" };
 }

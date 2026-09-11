@@ -38,6 +38,8 @@ const KIND_LABEL: Record<DraftDocumentRef["kind"], string> = {
   official_form_filled: "Official form (pre-filled)",
   generated_equivalent: "Tenderiza-generated equivalent",
   technical_proposal: "Technical proposal draft",
+  rfq_quotation: "RFQ quotation draft",
+  rfi_response: "RFI response draft",
 };
 
 type DraftWithTender = Draft & { tender: Tender };
