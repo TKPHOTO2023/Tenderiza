@@ -67,33 +67,104 @@ body {
   border-color: var(--border);
 }
 
-/* Marketing site only — the dashboard app uses the neutral theme above. */
-@keyframes marketing-blob {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(4%, -6%) scale(1.08); }
-  66% { transform: translate(-3%, 4%) scale(0.95); }
+/* ---------------------------------------------------------------------------
+   Marketing site. Scoped entirely under .site — the dashboard app above is
+   untouched. Deep institutional green ground, white document panels, gold for
+   action, red reserved strictly for deadlines.
+   --------------------------------------------------------------------------- */
+
+.site {
+  --field: #053b2c;
+  --field-2: #0a4e3a;
+  --field-3: #0f6448;
+  --ink: #08221a;
+  --ink-2: #47605a;
+  --paper: #ffffff;
+  --paper-2: #f2f5f2;
+  --gold: #ffb612;
+  --red: #de3831;
+  --blue: #002395;
+  --green: #007a4d;
+  --rule: #dde4de;
+  --rule-dark: rgba(255, 255, 255, 0.16);
+
+  font-family: var(--font-body), system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
 }
 
-@keyframes marketing-fade-up {
-  from { opacity: 0; transform: translateY(16px); }
+.site .display {
+  font-family: var(--font-display), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+}
+
+.site .mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Official-form field label: small, caps, letterspaced, always mono. */
+.site .field-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Section rule: gold hairline, with the flag's bands compressed into a short
+   tab at the hoist end — the stripe reads as a broken line at full width. */
+.site .section-rule {
+  display: flex;
+  height: 4px;
+}
+.site .section-rule::before {
+  content: "";
+  width: 88px;
+  flex: none;
+  background: linear-gradient(
+    to right,
+    var(--red) 0 25%,
+    var(--green) 25% 50%,
+    var(--gold) 50% 75%,
+    var(--blue) 75% 100%
+  );
+}
+.site .section-rule::after {
+  content: "";
+  flex: 1;
+  background: var(--gold);
+}
+
+@keyframes site-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes marketing-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+/* Hero signature: bid chips travelling down the pall's arms into the stem. */
+@keyframes site-converge-top {
+  0% { offset-distance: 0%; opacity: 0; }
+  8% { opacity: 1; }
+  55% { opacity: 1; }
+  70% { opacity: 0.15; }
+  100% { offset-distance: 100%; opacity: 0; }
 }
 
-.marketing-blob {
-  animation: marketing-blob 18s ease-in-out infinite;
+@keyframes site-pulse-ring {
+  0%, 100% { transform: scale(1); opacity: 0.55; }
+  50% { transform: scale(1.35); opacity: 0; }
 }
 
-.marketing-reveal {
-  animation: marketing-fade-up 0.6s ease-out both;
-}
+.site-reveal { animation: site-fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.site-pulse { animation: site-pulse-ring 2.4s ease-out infinite; }
 
-.marketing-shimmer {
-  background: linear-gradient(90deg, #007a4d 0%, #ffb612 25%, #de3831 50%, #002395 75%, #007a4d 100%);
-  background-size: 200% auto;
-  animation: marketing-shimmer 6s linear infinite;
+@media (prefers-reduced-motion: reduce) {
+  .site-reveal,
+  .site-pulse,
+  .site [class*="site-converge"] {
+    animation: none !important;
+    opacity: 1 !important;
+  }
 }

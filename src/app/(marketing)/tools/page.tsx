@@ -1,82 +1,100 @@
 import Link from "next/link";
-import { ArrowRight, Calculator, FileEdit, MessageCircleQuestion, Sparkles, Target } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { ArrowRight } from "lucide-react";
+import { FlagRule } from "@/components/marketing/flag";
 
 const TOOLS = [
   {
-    icon: Target,
-    title: "AI Eligibility Matching",
-    body: "Every open tender scored against your B-BBEE level, CIDB grade, categories, and provinces — automatically, every day.",
-    status: "Available",
+    ref: "T-01",
+    title: "Eligibility matching",
+    body: "Every open tender scored against your B-BBEE level, CIDB grade, categories and operating provinces — automatically, daily.",
+    status: "live" as const,
+    accent: "var(--green)",
   },
   {
-    icon: Sparkles,
-    title: "AI Cost Estimate Guidance",
-    body: "A generic market-rate range for what a tender might cost, reasoned independently of the official estimate — never a substitute for your own quote.",
-    status: "Available",
+    ref: "T-02",
+    title: "Requirement extraction",
+    body: "Reads the tender's own PDFs for required B-BBEE level, CIDB grade, compulsory briefing dates and functionality thresholds. Returns nothing rather than guessing.",
+    status: "live" as const,
+    accent: "var(--green)",
   },
   {
-    icon: FileEdit,
-    title: "AI Document Drafting",
-    body: "First-pass compliance summaries, technical proposals, and — for RFQs — a quotation draft with the pricing schedule laid out for you to price yourself.",
-    status: "Available",
+    ref: "T-03",
+    title: "Quote guidance",
+    body: "A generic market-rate range for what a scope of work typically costs, reasoned independently of the official estimate. Guidance only — never your quote.",
+    status: "live" as const,
+    accent: "var(--green)",
   },
   {
-    icon: Calculator,
-    title: "B-BBEE Points Calculator",
-    body: "See the actual preference points your B-BBEE level would score on a tender's 80/20 or 90/20 system before investing time in a full bid.",
-    status: "Coming soon",
+    ref: "T-04",
+    title: "Document drafting",
+    body: "Compliance summaries, technical proposals, and for RFQs a quotation with the tender's own pricing schedule laid out — every price cell left for you.",
+    status: "live" as const,
+    accent: "var(--gold)",
   },
   {
-    icon: MessageCircleQuestion,
-    title: "Clarification Question Generator",
-    body: "A draft list of sensible questions to ask the procuring entity, based on gaps or ambiguities in the tender's own scope — you review, edit, and send.",
-    status: "Coming soon",
+    ref: "T-05",
+    title: "B-BBEE points calculator",
+    body: "The preference points your level scores on a tender's 80/20 or 90/20 system, using the documented PPPFA formula — before you sink a day into the bid.",
+    status: "soon" as const,
+    accent: "var(--blue)",
+  },
+  {
+    ref: "T-06",
+    title: "Clarification questions",
+    body: "A draft list of questions worth asking the procuring entity, drawn from gaps in the tender's own scope. You edit and send them yourself.",
+    status: "soon" as const,
+    accent: "var(--blue)",
   },
 ];
 
 export default function ToolsPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
-      <div className="max-w-2xl">
-        <p className="text-sm font-semibold uppercase tracking-wide text-[#007A4D]">Tools</p>
-        <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-slate-900">
-          Built specifically for South African tender rules
-        </h1>
-        <p className="mt-4 text-slate-500">
-          Every tool below reads from the tender&apos;s own documents and your own company profile — nothing
-          is invented, and pricing decisions always stay yours.
-        </p>
-      </div>
+    <>
+      <section className="bg-[var(--field)]">
+        <div className="mx-auto max-w-[1240px] px-5 py-14">
+          <p className="field-label text-[var(--gold)]">Tools</p>
+          <h1 className="display mt-4 max-w-[20ch] text-[clamp(2.4rem,5.2vw,3.6rem)] uppercase text-white">
+            Built for SA procurement rules
+          </h1>
+          <p className="mt-4 max-w-[58ch] text-[17px] leading-relaxed text-white/65">
+            Each tool reads the tender&apos;s own documents and your own profile. Nothing is invented, and
+            pricing decisions never leave your hands.
+          </p>
+        </div>
+        <FlagRule />
+      </section>
 
-      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {TOOLS.map((tool) => (
-          <div key={tool.title} className="flex h-full flex-col rounded-2xl border border-slate-100 p-6 shadow-sm">
-            <div className="flex items-start justify-between">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#007A4D]/10 to-[#002395]/10 text-[#007A4D]">
-                <tool.icon className="h-5 w-5" />
+      <section className="mx-auto max-w-[1240px] px-5 py-16">
+        <div className="grid gap-px border border-[var(--rule)] bg-[var(--rule)] md:grid-cols-2 lg:grid-cols-3">
+          {TOOLS.map((tool) => (
+            <article key={tool.ref} className="flex flex-col bg-white p-7">
+              <div className="flex items-center justify-between">
+                <span className="mono text-[12px] font-semibold tracking-wider text-[var(--ink-2)]">{tool.ref}</span>
+                <span
+                  className={`mono px-2 py-1 text-[11px] font-bold tracking-wider ${
+                    tool.status === "live"
+                      ? "bg-[var(--green)]/10 text-[var(--green)]"
+                      : "bg-[var(--paper-2)] text-[var(--ink-2)]"
+                  }`}
+                >
+                  {tool.status === "live" ? "AVAILABLE" : "IN BUILD"}
+                </span>
               </div>
-              <span
-                className={cn(
-                  "rounded-full px-2.5 py-1 text-xs font-semibold",
-                  tool.status === "Available" ? "bg-[#007A4D]/10 text-[#007A4D]" : "bg-slate-100 text-slate-500"
-                )}
-              >
-                {tool.status}
-              </span>
-            </div>
-            <h3 className="mt-4 text-base font-semibold text-slate-900">{tool.title}</h3>
-            <p className="mt-2 flex-1 text-sm text-slate-500">{tool.body}</p>
-          </div>
-        ))}
-      </div>
+              <div className="mt-5 h-1 w-10" style={{ background: tool.accent }} />
+              <h2 className="mt-4 text-[18px] font-bold leading-snug text-[var(--ink)]">{tool.title}</h2>
+              <p className="mt-3 flex-1 text-[15px] leading-relaxed text-[var(--ink-2)]">{tool.body}</p>
+            </article>
+          ))}
+        </div>
 
-      <Link
-        href="/onboarding"
-        className="mt-12 inline-flex items-center gap-2 rounded-full bg-[#002395] px-6 py-3 text-sm font-semibold text-white transition-transform hover:scale-105"
-      >
-        Try the tools free <ArrowRight className="h-4 w-4" />
-      </Link>
-    </div>
+        <Link
+          href="/onboarding"
+          className="group mt-12 inline-flex items-center gap-2 bg-[var(--field)] px-7 py-4 text-[15px] font-bold text-white transition-transform hover:scale-[1.02]"
+        >
+          Try the tools free
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+        </Link>
+      </section>
+    </>
   );
 }

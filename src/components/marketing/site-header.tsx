@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ArrowRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Menu, X } from "lucide-react";
+import { FlagMark } from "./flag";
 
-const NAV_LINKS = [
+const NAV = [
   { href: "/tenders", label: "Tenders" },
   { href: "/awarded-tenders", label: "Awarded Tenders" },
   { href: "/tools", label: "Tools" },
@@ -19,84 +19,90 @@ export function SiteHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-black/5 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#007A4D] via-[#FFB612] to-[#DE3831] text-sm font-black text-white shadow-sm">
-            T
-          </span>
-          <span className="text-lg font-extrabold tracking-tight text-slate-900">
-            Tenderiza
-          </span>
-        </Link>
-
-        <nav className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map((link) => {
-            const active = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  active ? "text-[#002395]" : "text-slate-600 hover:text-slate-900"
-                )}
-              >
-                {link.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="hidden items-center gap-3 md:flex">
-          <Link href="/dashboard" className="text-sm font-medium text-slate-600 hover:text-slate-900">
-            Login
-          </Link>
-          <Link
-            href="/onboarding"
-            className="group inline-flex items-center gap-1.5 rounded-full bg-[#002395] px-4 py-2 text-sm font-semibold text-white shadow-sm transition-transform hover:scale-[1.03] hover:bg-[#001b73]"
-          >
-            Start Free Trial
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
+    <header className="sticky top-0 z-50">
+      {/* Utility strip — states the data's provenance, the way an official site would. */}
+      <div className="bg-[var(--field)] text-white/70">
+        <div className="mx-auto flex h-8 max-w-[1240px] items-center justify-between px-5 text-[11px]">
+          <p className="mono tracking-wider">SOURCE · NATIONAL TREASURY eTENDERS (OCDS)</p>
+          <p className="mono hidden tracking-wider sm:block">SYNCED DAILY · ALL 9 PROVINCES</p>
         </div>
+      </div>
 
-        <button
-          className="rounded-md p-2 text-slate-700 md:hidden"
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Toggle menu"
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+      <div className="border-b border-[var(--rule)] bg-white">
+        <div className="mx-auto flex h-[68px] max-w-[1240px] items-center justify-between px-5">
+          <Link href="/" className="flex items-center gap-2.5">
+            <FlagMark className="h-6 w-9 shrink-0 shadow-sm" />
+            <span className="display text-[22px] tracking-tight text-[var(--ink)]">TENDERIZA</span>
+          </Link>
+
+          <nav className="hidden items-center gap-7 lg:flex">
+            {NAV.map((item) => {
+              const active = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`relative py-1 text-[15px] font-medium transition-colors ${
+                    active ? "text-[var(--field)]" : "text-[var(--ink-2)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  {item.label}
+                  {active && <span className="absolute -bottom-[3px] left-0 h-[3px] w-full bg-[var(--gold)]" />}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="hidden items-center gap-4 lg:flex">
+            <Link href="/dashboard" className="text-[15px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)]">
+              Login
+            </Link>
+            <Link
+              href="/onboarding"
+              className="bg-[var(--field)] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--field-2)]"
+            >
+              Start free trial
+            </Link>
+          </div>
+
+          <button
+            className="p-2 text-[var(--ink)] lg:hidden"
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       {open && (
-        <div className="border-t border-black/5 bg-white px-4 py-3 md:hidden">
-          <nav className="grid gap-1">
-            {NAV_LINKS.map((link) => (
+        <div className="border-b border-[var(--rule)] bg-white px-5 py-3 lg:hidden">
+          <nav className="grid">
+            {NAV.map((item) => (
               <Link
-                key={link.href}
-                href={link.href}
+                key={item.href}
+                href={item.href}
                 onClick={() => setOpen(false)}
-                className="rounded-md px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                className="border-b border-[var(--rule)] py-3 text-[15px] font-medium text-[var(--ink)]"
               >
-                {link.label}
+                {item.label}
               </Link>
             ))}
-            <div className="mt-2 grid gap-2 border-t border-black/5 pt-3">
+            <div className="mt-4 grid gap-2">
               <Link
                 href="/dashboard"
                 onClick={() => setOpen(false)}
-                className="rounded-md px-3 py-2 text-center text-sm font-medium text-slate-700"
+                className="border border-[var(--rule)] py-2.5 text-center text-[14px] font-semibold text-[var(--ink)]"
               >
                 Login
               </Link>
               <Link
                 href="/onboarding"
                 onClick={() => setOpen(false)}
-                className="rounded-full bg-[#002395] px-3 py-2 text-center text-sm font-semibold text-white"
+                className="bg-[var(--field)] py-2.5 text-center text-[14px] font-semibold text-white"
               >
-                Start Free Trial
+                Start free trial
               </Link>
             </div>
           </nav>

@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 
+const FIELD =
+  "h-11 w-full border border-[var(--rule)] bg-white px-3 text-[15px] outline-none transition-colors focus:border-[var(--field)] focus:ring-2 focus:ring-[var(--field)]/15";
+
 export function ContactForm() {
   const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
-  const [status, setStatus] = useState<"idle" | "submitting" | "sent" | "error">("idle");
+  const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
   const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus("submitting");
+    setStatus("sending");
     setError(null);
     try {
       const res = await fetch("/api/contact", {
@@ -19,73 +22,73 @@ export function ContactForm() {
         body: JSON.stringify(form),
       });
       const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Something went wrong");
+      if (!res.ok) throw new Error(body.error || "That didn't send. Try again.");
       setStatus("sent");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setStatus("error");
+      setError(err instanceof Error ? err.message : "That didn't send. Try again.");
+      setStatus("idle");
     }
   }
 
   if (status === "sent") {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-[#007A4D]/20 bg-[#007A4D]/5 p-10 text-center">
-        <CheckCircle2 className="h-8 w-8 text-[#007A4D]" />
-        <p className="font-semibold text-slate-900">Message sent</p>
-        <p className="text-sm text-slate-500">We&apos;ll get back to you as soon as we can.</p>
+      <div className="flex flex-col items-start gap-3 border-l-4 border-[var(--green)] bg-[var(--green)]/5 p-6">
+        <CheckCircle2 className="h-6 w-6 text-[var(--green)]" />
+        <p className="text-[17px] font-bold text-[var(--ink)]">Message received</p>
+        <p className="text-[15px] text-[var(--ink-2)]">We&apos;ll reply within one business day.</p>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid gap-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="grid gap-1.5">
-          <label className="text-sm font-medium text-slate-700">Name</label>
-          <input
-            required
-            value={form.name}
-            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#002395] focus:ring-2 focus:ring-[#002395]/20"
-          />
+    <form onSubmit={onSubmit} className="grid gap-5">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <label htmlFor="name" className="field-label text-[var(--ink-2)]">
+            Name
+          </label>
+          <input id="name" required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className={FIELD} />
         </div>
-        <div className="grid gap-1.5">
-          <label className="text-sm font-medium text-slate-700">Email</label>
-          <input
-            required
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#002395] focus:ring-2 focus:ring-[#002395]/20"
-          />
+        <div className="grid gap-2">
+          <label htmlFor="email" className="field-label text-[var(--ink-2)]">
+            Email
+          </label>
+          <input id="email" type="email" required value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} className={FIELD} />
         </div>
       </div>
-      <div className="grid gap-1.5">
-        <label className="text-sm font-medium text-slate-700">Company (optional)</label>
-        <input
-          value={form.company}
-          onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#002395] focus:ring-2 focus:ring-[#002395]/20"
-        />
+      <div className="grid gap-2">
+        <label htmlFor="company" className="field-label text-[var(--ink-2)]">
+          Company · optional
+        </label>
+        <input id="company" value={form.company} onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))} className={FIELD} />
       </div>
-      <div className="grid gap-1.5">
-        <label className="text-sm font-medium text-slate-700">Message</label>
+      <div className="grid gap-2">
+        <label htmlFor="message" className="field-label text-[var(--ink-2)]">
+          Message
+        </label>
         <textarea
+          id="message"
           required
-          rows={4}
+          rows={5}
           value={form.message}
           onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#002395] focus:ring-2 focus:ring-[#002395]/20"
+          className="w-full border border-[var(--rule)] bg-white p-3 text-[15px] outline-none transition-colors focus:border-[var(--field)] focus:ring-2 focus:ring-[var(--field)]/15"
         />
       </div>
-      {error && <p className="text-sm text-[#DE3831]">{error}</p>}
+
+      {error && (
+        <p role="alert" className="border-l-4 border-[var(--red)] bg-[var(--red)]/5 px-3 py-2 text-[14px] text-[var(--red)]">
+          {error}
+        </p>
+      )}
+
       <button
         type="submit"
-        disabled={status === "submitting"}
-        className="inline-flex items-center justify-center gap-2 rounded-full bg-[#002395] px-6 py-3 text-sm font-semibold text-white transition-transform hover:scale-105 disabled:opacity-60"
+        disabled={status === "sending"}
+        className="group inline-flex items-center justify-center gap-2 bg-[var(--field)] px-7 py-4 text-[15px] font-bold text-white transition-transform hover:scale-[1.02] disabled:opacity-60"
       >
-        {status === "submitting" ? "Sending…" : "Send message"}
-        <ArrowRight className="h-4 w-4" />
+        {status === "sending" ? "Sending…" : "Send message"}
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </button>
     </form>
   );

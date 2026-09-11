@@ -1,28 +1,50 @@
-import { Mail } from "lucide-react";
+import { Mail, MapPin, Clock } from "lucide-react";
+import { FlagRule } from "@/components/marketing/flag";
 import { ContactForm } from "./contact-form";
 
 export default function ContactPage() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-20 sm:px-6 lg:px-8">
-      <div className="grid gap-12 lg:grid-cols-2">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-[#007A4D]">Contact us</p>
-          <h1 className="mt-2 text-4xl font-extrabold tracking-tight text-slate-900">
-            Questions before you start?
+    <>
+      <section className="bg-[var(--field)]">
+        <div className="mx-auto max-w-[1240px] px-5 py-14">
+          <p className="field-label text-[var(--gold)]">Contact us</p>
+          <h1 className="display mt-4 max-w-[16ch] text-[clamp(2.4rem,5.2vw,3.6rem)] uppercase text-white">
+            Talk to a person
           </h1>
-          <p className="mt-4 text-slate-500">
-            Whether it&apos;s about pricing, a specific tender type, or how the AI drafting actually works —
-            send us a message and a real person will get back to you.
+          <p className="mt-4 max-w-[56ch] text-[17px] leading-relaxed text-white/65">
+            Questions about pricing, a specific tender type, or how the drafting actually works — send it
+            through and we&apos;ll come back to you.
           </p>
-          <div className="mt-8 flex items-center gap-3 text-sm text-slate-600">
-            <Mail className="h-4 w-4 text-[#007A4D]" />
-            hello@tenderiza.co.za
+        </div>
+        <FlagRule />
+      </section>
+
+      <section className="mx-auto max-w-[1240px] px-5 py-16">
+        <div className="grid gap-px border border-[var(--rule)] bg-[var(--rule)] lg:grid-cols-[1fr_1.4fr]">
+          <div className="bg-[var(--paper-2)] p-8">
+            <p className="field-label text-[var(--green)]">Details</p>
+            <dl className="mt-6 grid gap-6">
+              {[
+                { icon: Mail, label: "Email", value: "hello@tenderiza.co.za" },
+                { icon: MapPin, label: "Based in", value: "South Africa" },
+                { icon: Clock, label: "Response time", value: "1 business day" },
+              ].map((item) => (
+                <div key={item.label} className="flex gap-3">
+                  <item.icon className="mt-0.5 h-4 w-4 shrink-0 text-[var(--field)]" />
+                  <div>
+                    <dt className="field-label text-[var(--ink-2)]">{item.label}</dt>
+                    <dd className="mt-1 text-[15px] font-medium text-[var(--ink)]">{item.value}</dd>
+                  </div>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="bg-white p-8">
+            <ContactForm />
           </div>
         </div>
-        <div className="rounded-2xl border border-slate-100 p-6 shadow-sm sm:p-8">
-          <ContactForm />
-        </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 }
