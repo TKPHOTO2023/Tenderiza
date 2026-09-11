@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Company profile onboarding and compliance document management for South African government tender readiness.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col bg-background text-foreground">{children}</body>

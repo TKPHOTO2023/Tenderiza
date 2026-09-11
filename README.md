@@ -482,6 +482,43 @@ time, per how this phase was scoped): company branding + letterhead on
 generated documents, in-platform document preview, a B-BBEE preference-point
 calculator, and a clarification-question generator.
 
+## Public marketing site
+
+`/`, `/tenders`, `/awarded-tenders`, `/tools`, `/pricing`, and `/contact`
+(`src/app/(marketing)/**`) are a separate, unauthenticated public site — the
+`(marketing)` route group has its own layout/header/footer
+(`src/components/marketing/`) and doesn't touch the dashboard's neutral
+theme (`src/app/globals.css`'s dashboard tokens are untouched; the marketing
+pages use their own SA-flag-inspired palette — green `#007A4D`, gold
+`#FFB612`, red `#DE3831`, blue `#002395` — via plain Tailwind arbitrary
+values).
+
+- **Home** (`/`) renders a real "Live Tenders" preview and a stats strip
+  pulled directly from the `tenders` table (not sample/placeholder data) —
+  it hides the stats strip entirely rather than show a `0` if nothing's
+  synced yet.
+- **Tenders** (`/tenders`) shows the next several open tenders (real data,
+  capped at 8) with a "N more waiting — sign up to see them" prompt once
+  there are more than that.
+- **Awarded Tenders** (`/awarded-tenders`) is an honest "coming soon" page —
+  no fake data, since award-history ingestion hasn't been built yet.
+- **Tools** (`/tools`) lists what's actually shipped (matching, cost
+  estimate, document drafting) alongside what's still coming (B-BBEE
+  calculator, clarification-question generator), clearly labeled either way.
+- **Pricing** (`/pricing`) shows three illustrative tiers with an explicit
+  disclaimer that billing isn't wired up yet — every plan's CTA currently
+  goes to the same free-trial onboarding flow.
+- **Contact** (`/contact`) is a real, working form — submissions are saved
+  to a `contact_messages` table via `POST /api/contact` (no email sending is
+  set up yet, so this is where messages land for now).
+
+"Start Free Trial" and "Login" both currently point at the existing
+single-tenant `/onboarding` and `/dashboard` — there's no real
+authentication or per-visitor accounts yet, so anyone who clicks either
+lands in the same one company profile. Real signup/login and payment/plan
+gating are backend work for a later phase; this pass was scoped to the
+front end only, at explicit request.
+
 ## Notes on scope
 
 All five phases of the original product plan are built, with Phase 6

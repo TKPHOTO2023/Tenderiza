@@ -436,6 +436,21 @@ model Draft {
 }
 
 // ---------------------------------------------------------------------------
+// Marketing site: Contact Us submissions
+// ---------------------------------------------------------------------------
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  company   String?
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("contact_messages")
+}
+
+// ---------------------------------------------------------------------------
 // Phase 5: Review, approval & submission audit trail
 // ---------------------------------------------------------------------------
 
