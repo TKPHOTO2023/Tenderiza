@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCompany } from "@/lib/use-company";
 import { Upload, Trash2, Check } from "lucide-react";
+import { MailboxConnect } from "@/components/brand/mailbox-connect";
 
 const DEFAULT_PRIMARY = "#053B2C";
 const DEFAULT_ACCENT = "#FFB612";
@@ -189,6 +190,7 @@ export default function BrandPage() {
               ))}
             </CardContent>
           </Card>
+          <MailboxConnect />
         </div>
 
         {/* Live letterhead preview — mirrors src/lib/letterhead.ts */}

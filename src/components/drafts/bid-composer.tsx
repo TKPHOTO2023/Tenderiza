@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AlertTriangle, Download, Mail, Paperclip, Building2, FileText } from "lucide-react";
+import { AlertTriangle, Download, Mail, Paperclip, Building2, FileText, Send } from "lucide-react";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -35,8 +35,15 @@ function formatSize(bytes: number) {
 
 export function BidComposer({ draftId }: { draftId: string }) {
   const { data, isLoading } = useSWR<BidEmailPreview>(`/api/drafts/${draftId}/bid-email`, fetcher);
+  const { data: mail } = useSWR<{ connected: boolean; account: { fromAddress: string } | null }>(
+    "/api/mail-account",
+    fetcher
+  );
   const [overrides, setOverrides] = useState<{ to?: string; subject?: string; body?: string }>({});
   const [downloading, setDownloading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Assembling your bid pack…</p>;
   if (!data) return <p className="text-sm text-muted-foreground">Couldn&apos;t assemble the bid pack.</p>;
@@ -44,6 +51,25 @@ export function BidComposer({ draftId }: { draftId: string }) {
   const to = overrides.to ?? data.to ?? "";
   const subject = overrides.subject ?? data.subject;
   const body = overrides.body ?? data.body;
+
+  async function send() {
+    setSending(true);
+    setSendError(null);
+    try {
+      const res = await fetch(`/api/drafts/${draftId}/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ to, subject, body }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Sending failed");
+      setSent(true);
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : "Sending failed");
+    } finally {
+      setSending(false);
+    }
+  }
 
   async function download() {
     setDownloading(true);
@@ -70,8 +96,9 @@ export function BidComposer({ draftId }: { draftId: string }) {
       <CardHeader>
         <CardTitle className="text-base">Send your bid</CardTitle>
         <CardDescription>
-          Everything below is assembled and ready. Download it, open it in your email programme, and press send
-          — so the bid arrives from your own address. Tenderiza never sends it for you.
+          {mail?.connected
+            ? "Everything below is assembled and ready. Sending goes out from your own connected mailbox, only when you press send on this bid."
+            : "Everything below is assembled and ready. Connect a mailbox under Brand to send from here, or download it and send from your own email programme."}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -151,8 +178,27 @@ export function BidComposer({ draftId }: { draftId: string }) {
           )}
         </div>
 
+        {sent && (
+          <Alert>
+            <AlertDescription className="flex items-center gap-2">
+              <Send className="h-4 w-4 text-success" /> Sent to {to}. This bid is now marked submitted.
+            </AlertDescription>
+          </Alert>
+        )}
+        {sendError && (
+          <Alert variant="destructive">
+            <AlertDescription>{sendError}</AlertDescription>
+          </Alert>
+        )}
+
         <div className="flex flex-wrap gap-2">
-          <Button onClick={download} disabled={downloading}>
+          {mail?.connected && !sent && (
+            <Button onClick={send} disabled={sending || !to}>
+              <Send className="h-4 w-4" />
+              {sending ? "Sending…" : `Send from ${mail.account?.fromAddress}`}
+            </Button>
+          )}
+          <Button onClick={download} disabled={downloading} variant={mail?.connected ? "outline" : "default"}>
             <Download className="h-4 w-4" />
             {downloading ? "Preparing…" : "Download bid email"}
           </Button>

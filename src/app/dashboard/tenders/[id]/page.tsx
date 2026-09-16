@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ClosingBadge } from "@/components/tenders/closing-badge";
 import { ProcurementTypeBadge } from "@/components/tenders/procurement-type-badge";
+import { BidButton } from "@/components/tenders/bid-button";
 import { DocumentRow } from "@/components/tenders/document-row";
 import { RequirementsSummary } from "@/components/tenders/requirements-summary";
 import { CostEstimate } from "@/components/tenders/cost-estimate";
@@ -40,11 +41,19 @@ export default function TenderDetailPage({ params }: { params: Promise<{ id: str
           <h1 className="text-2xl font-semibold">{tender.title || "Untitled tender"}</h1>
           <p className="mt-1 text-sm text-muted-foreground">OCID: {tender.ocid}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <ProcurementTypeBadge type={tender.procurementType} />
-          <ClosingBadge closingDate={tender.closingDate} />
+        <div className="flex shrink-0 flex-col items-end gap-3">
+          <div className="flex items-center gap-2">
+            <ProcurementTypeBadge type={tender.procurementType} />
+            <ClosingBadge closingDate={tender.closingDate} />
+          </div>
+          <BidButton tenderId={tender.id} />
         </div>
       </div>
+
+      <p className="-mt-2 text-xs text-muted-foreground">
+        &quot;Bid for this tender&quot; reads the documents, checks them against your profile, and drafts your
+        quotation or proposal in one step. You still set the pricing and send it yourself.
+      </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>

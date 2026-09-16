@@ -131,6 +131,7 @@ model Company {
   documents    CompanyDocument[]
   matches      Match[]
   drafts       Draft[]
+  mailAccount  MailAccount?
 
   @@map("companies")
 }
@@ -448,6 +449,45 @@ model Draft {
 
   @@unique([companyId, tenderId])
   @@map("drafts")
+}
+
+// ---------------------------------------------------------------------------
+// Connected mailbox — so a bid can be sent from the bidder's own address
+// ---------------------------------------------------------------------------
+
+enum MailProvider {
+  GMAIL
+  OUTLOOK
+  SMTP // any other webmail / hosting provider
+}
+
+// One connected mailbox per company. The password is encrypted at rest with
+// MAIL_ENCRYPTION_KEY — never returned by any API, only decrypted
+// server-side at the moment of sending.
+model MailAccount {
+  id        String @id @default(cuid())
+  companyId String @unique
+
+  provider    MailProvider
+  fromName    String?
+  fromAddress String
+
+  host   String
+  port   Int     @default(587)
+  secure Boolean @default(false) // true for port 465 (implicit TLS)
+
+  username          String
+  encryptedPassword String // AES-256-GCM, see src/lib/mail-crypto.ts
+
+  verifiedAt DateTime? // last time a test connection succeeded
+  lastError  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@map("mail_accounts")
 }
 
 // ---------------------------------------------------------------------------

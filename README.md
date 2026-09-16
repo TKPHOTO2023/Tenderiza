@@ -477,10 +477,52 @@ Existing tenders default to `UNKNOWN` until their next Layer 2 extraction
 runs (manual "Re-check" on a Match, or the next sync/cron pass) — that's why
 older tenders won't show a type badge until re-extracted.
 
-**Still to come in Phase 6** (being built incrementally, one piece at a
-time, per how this phase was scoped): company branding + letterhead on
-generated documents, in-platform document preview, a B-BBEE preference-point
-calculator, and a clarification-question generator.
+### Bidding end to end
+
+**One action does the whole pipeline.** "Bid for this tender"
+(`POST /api/tenders/[id]/bid`) reads the tender's documents, classifies the
+procurement type, scores it against the company profile, and drafts the
+right document — a priced quotation for an RFQ, a proposal for an RFP, a
+capability summary for an RFI — then lands the user on the draft.
+
+**Brand kit** (`/dashboard/brand`): logo, primary/accent colours, banking
+details. Every Tenderiza-generated document carries that letterhead
+(`src/lib/letterhead.ts`); a procuring entity's own supplied form is filled
+but never restyled. A missing or unreadable logo degrades to a clean
+default.
+
+**Submission details** are extracted alongside the requirements: submission
+email, method, the tender's own instructions, enquiries contact, delivery
+location, and the documents the bidder must attach. The extractor is told to
+return null rather than infer an address, since a wrong one loses the bid.
+
+**Bid pack** (`src/lib/bid-pack.ts`) assembles the generated documents plus
+the company's own compliance documents into one email, with the recipient
+and a body addressed to the named contact. Two ways out, both requiring a
+human click on that specific bid:
+- **Download** — a standard `.eml` that opens in Outlook/Apple Mail/
+  Thunderbird as a real draft with every attachment in place.
+- **Send** — from the company's own connected mailbox
+  (`POST /api/drafts/[id]/send`), which requires the draft to already be
+  `APPROVED` and logs the send to the audit trail.
+
+**Connected mailbox** (`src/lib/mail-sender.ts`): SMTP for Gmail (app
+password), Outlook/Microsoft 365, or any other webmail host. Passwords are
+encrypted at rest with AES-256-GCM (`MAIL_ENCRYPTION_KEY`), never returned
+by any API, and the connection is tested at save time. Note that Microsoft
+disables SMTP AUTH by default on many tenants — the download path is the
+fallback there.
+
+**Guided bid flow** (`src/lib/bid-readiness.ts`) turns a tender into a
+sequence: qualify → compulsory briefing → documents → draft → price →
+approve → send, with the next action highlighted. Every step reports real
+state; a failed hard requirement blocks rather than quietly passing.
+
+**Still to come in Phase 6**: in-platform document preview, a B-BBEE
+preference-point calculator, and a clarification-question generator. OAuth
+mailbox connection (rather than SMTP) is also still open — Gmail's
+`gmail.send` scope needs Google verification before it can be used beyond
+test users.
 
 ## Public marketing site
 

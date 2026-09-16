@@ -12,6 +12,7 @@ import { ProcurementTypeBadge } from "@/components/tenders/procurement-type-badg
 import { PricingScheduleTable } from "@/components/tenders/pricing-schedule-table";
 import { AtAGlance } from "@/components/tenders/at-a-glance";
 import { BidSteps } from "@/components/tenders/bid-steps";
+import { BidButton } from "@/components/tenders/bid-button";
 import type { BidStep } from "@/lib/bid-readiness";
 import { formatDate } from "@/lib/format";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, HelpCircle, Info, RefreshCw, FileEdit } from "lucide-react";
@@ -109,10 +110,14 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
             <RefreshCw className={cn("h-4 w-4", rechecking && "animate-spin")} />
             {rechecking ? "Re-checking…" : "Re-check"}
           </Button>
-          <Button onClick={generateDraft} disabled={generatingDraft} size="sm">
-            <FileEdit className="h-4 w-4" />
-            {generatingDraft ? "Generating draft…" : "Generate draft"}
-          </Button>
+          {bidSteps?.draftId ? (
+            <Button onClick={generateDraft} disabled={generatingDraft} size="sm">
+              <FileEdit className="h-4 w-4" />
+              {generatingDraft ? "Regenerating…" : "Regenerate draft"}
+            </Button>
+          ) : (
+            <BidButton tenderId={tenderId} size="sm" />
+          )}
         </div>
       </div>
 
