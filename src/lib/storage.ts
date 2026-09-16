@@ -1,4 +1,4 @@
-import { mkdir, writeFile, unlink } from "fs/promises";
+import { mkdir, writeFile, unlink, readFile } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
 import { put, del } from "@vercel/blob";
@@ -54,5 +54,24 @@ export const storage = {
       throw new Error("Invalid storage key");
     }
     return resolved;
+  },
+
+  /**
+   * Reads a previously stored file back into memory, whichever backend holds
+   * it — needed to embed a logo into a generated PDF, or to attach a
+   * compliance document to a bid pack. Returns null rather than throwing, so
+   * one missing file can't fail a whole bid pack.
+   */
+  async read(storageKeyOrUrl: string): Promise<Buffer | null> {
+    try {
+      if (storageKeyOrUrl.startsWith("http")) {
+        const res = await fetch(storageKeyOrUrl);
+        if (!res.ok) return null;
+        return Buffer.from(await res.arrayBuffer());
+      }
+      return await readFile(storage.resolvePath(storageKeyOrUrl));
+    } catch {
+      return null;
+    }
   },
 };

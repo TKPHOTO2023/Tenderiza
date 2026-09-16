@@ -9,6 +9,7 @@ import {
   FileStack,
   FileText,
   LayoutDashboard,
+  Palette,
   Sparkles,
   Target,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import {
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/dashboard/profile", label: "Profile", icon: Building2 },
+  { href: "/dashboard/brand", label: "Brand", icon: Palette },
   { href: "/dashboard/documents", label: "Documents", icon: FileText },
   { href: "/dashboard/tenders", label: "Tenders", icon: FileStack },
   { href: "/dashboard/matches", label: "Matches", icon: Target },

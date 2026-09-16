@@ -76,7 +76,11 @@ export async function generateTechnicalProposal(
   return response.parsed_output;
 }
 
-export async function renderTechnicalProposalPdf(tender: Tender, proposal: TechnicalProposal): Promise<Buffer> {
+export async function renderTechnicalProposalPdf(
+  tender: Tender,
+  proposal: TechnicalProposal,
+  company?: Company
+): Promise<Buffer> {
   const sections: DraftPdfSection[] = [
     { heading: "Approach & Methodology", body: proposal.approach },
     {
@@ -95,5 +99,5 @@ export async function renderTechnicalProposalPdf(tender: Tender, proposal: Techn
     },
   ];
 
-  return buildDraftPdf(`Technical Proposal (Draft) — ${tender.title || tender.ocid}`, sections);
+  return buildDraftPdf(`Technical Proposal (Draft) — ${tender.title || tender.ocid}`, sections, company);
 }

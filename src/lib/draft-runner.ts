@@ -62,7 +62,7 @@ export async function generateDraft(tenderId: string) {
     }
 
     const proposal = await generateTechnicalProposal(company, tender, scopeSummary);
-    const proposalBuffer = await renderTechnicalProposalPdf(tender, proposal);
+    const proposalBuffer = await renderTechnicalProposalPdf(tender, proposal, company);
     const proposalUpload = await storage.put(company.id, "technical-proposal-draft.pdf", proposalBuffer);
     uploaded.push({ label: "Technical proposal (draft)", url: proposalUpload.url, kind: "technical_proposal" });
   }

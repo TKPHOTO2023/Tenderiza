@@ -1,4 +1,6 @@
 import { PDFDocument, PDFFont, PDFPage, StandardFonts, rgb, degrees } from "pdf-lib";
+import type { Company } from "@prisma/client";
+import { drawLetterhead, loadLetterhead } from "@/lib/letterhead";
 
 const PAGE_MARGIN = 50;
 const PAGE_SIZE: [number, number] = [595.28, 841.89]; // A4 in points
@@ -64,14 +66,27 @@ const TABLE_ROW_HEIGHT = 16;
  * compliance document and the technical proposal draft, so both come out of
  * the same watermarking/pagination path.
  */
-export async function buildDraftPdf(title: string, sections: DraftPdfSection[]): Promise<Buffer> {
+export async function buildDraftPdf(
+  title: string,
+  sections: DraftPdfSection[],
+  company?: Company
+): Promise<Buffer> {
   const pdfDoc = await PDFDocument.create();
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+  // Brand kit, when the caller passes a company. Falls back to clean defaults
+  // if no logo or colours have been set, never a broken placeholder.
+  const letterhead = company ? await loadLetterhead(pdfDoc, company) : null;
+  const headingColor = letterhead?.primary ?? rgb(0.1, 0.1, 0.1);
+
   const contentWidth = PAGE_SIZE[0] - PAGE_MARGIN * 2;
   let page = pdfDoc.addPage(PAGE_SIZE);
   let y = PAGE_SIZE[1] - PAGE_MARGIN;
+
+  if (letterhead) {
+    y = drawLetterhead(page, letterhead, { regular: regularFont, bold: boldFont }, PAGE_MARGIN);
+  }
 
   function newPage() {
     drawWatermark(page, boldFont);
@@ -85,12 +100,12 @@ export async function buildDraftPdf(title: string, sections: DraftPdfSection[]):
 
   // Title
   ensureSpace(30);
-  page.drawText(title, { x: PAGE_MARGIN, y, size: 18, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
+  page.drawText(title, { x: PAGE_MARGIN, y, size: 18, font: boldFont, color: headingColor });
   y -= 30;
 
   for (const section of sections) {
     ensureSpace(22);
-    page.drawText(section.heading, { x: PAGE_MARGIN, y, size: 13, font: boldFont, color: rgb(0.1, 0.1, 0.1) });
+    page.drawText(section.heading, { x: PAGE_MARGIN, y, size: 13, font: boldFont, color: headingColor });
     y -= 20;
 
     if (section.table) {

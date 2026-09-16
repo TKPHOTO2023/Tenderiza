@@ -96,7 +96,7 @@ async function buildEquivalentComplianceDocument(company: Company, tender: Tende
     },
   ];
 
-  return buildDraftPdf(`Compliance Summary — ${tender.title || tender.ocid}`, sections);
+  return buildDraftPdf(`Compliance Summary — ${tender.title || tender.ocid}`, sections, company);
 }
 
 type PricingScheduleItem = ExtractedRequirements["pricingScheduleItems"][number];
@@ -158,12 +158,24 @@ export async function generateRfqQuotationDocument(
           body: "No itemized pricing schedule was found in this tender's documents — price against the tender's stated scope of work directly, using the procuring entity's own required format if one was supplied.",
         },
     {
+      heading: "Banking details for payment",
+      body: company.bankAccountNumber
+        ? [
+            `Account holder: ${company.bankAccountName || company.companyName || "—"}`,
+            `Bank: ${company.bankName || "—"}`,
+            `Account number: ${company.bankAccountNumber}`,
+            `Branch code: ${company.bankBranchCode || "—"}`,
+            `Account type: ${company.bankAccountType || "—"}`,
+          ].join("\n")
+        : "No banking details captured yet — add them under Brand in Tenderiza, or complete this section by hand before submitting.",
+    },
+    {
       heading: "Declaration and sign-off",
       body: "[TO BE COMPLETED BY BIDDER — REQUIRES SIGN-OFF]\n\nAny declaration this RFQ requires (validity period, authorization to sign, etc.) must be completed and signed by you — it is not reproduced here.",
     },
   ];
 
-  const buffer = await buildDraftPdf(`Quotation (Draft) — ${tender.title || tender.ocid}`, sections);
+  const buffer = await buildDraftPdf(`Quotation (Draft) — ${tender.title || tender.ocid}`, sections, company);
   return { label: "Quotation (draft)", buffer, kind: "rfq_quotation", filename: "quotation-draft.pdf" };
 }
 
@@ -208,6 +220,6 @@ export async function generateRfiResponseDocument(
     },
   ];
 
-  const buffer = await buildDraftPdf(`RFI Response (Draft) — ${tender.title || tender.ocid}`, sections);
+  const buffer = await buildDraftPdf(`RFI Response (Draft) — ${tender.title || tender.ocid}`, sections, company);
   return { label: "RFI response (draft)", buffer, kind: "rfi_response", filename: "rfi-response-draft.pdf" };
 }

@@ -103,6 +103,21 @@ model Company {
   teamSize        Int?
   capacityNotes   String?
 
+  // Brand kit — applied as a letterhead to documents Tenderiza generates
+  // itself (quotations, proposals, checklists). Never applied over a
+  // procuring entity's own supplied form; see src/lib/letterhead.ts.
+  logoUrl           String? // storage key or blob URL, same convention as CompanyDocument.fileUrl
+  brandPrimaryColor String? // hex, e.g. "#053B2C" — headings and rules
+  brandAccentColor  String? // hex — secondary accents
+
+  // Banking details. Objective, factual data that quotations and several SBD
+  // forms ask for directly, so it's safe to auto-fill.
+  bankName          String?
+  bankAccountName   String?
+  bankAccountNumber String?
+  bankBranchCode    String?
+  bankAccountType   String?
+
   // Onboarding progress tracking (supports save-and-resume)
   currentStep        OnboardingStep @default(COMPANY_BASICS)
   onboardingComplete Boolean        @default(false)
