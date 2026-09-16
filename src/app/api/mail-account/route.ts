@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { MailProvider } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 import { encryptSecret, hasEncryptionKey } from "@/lib/mail-crypto";
 import { verifyMailAccount, PROVIDER_PRESETS } from "@/lib/mail-sender";
 
 /** The password is never returned — only whether a mailbox is connected and working. */
 export async function GET() {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const account = await prisma.mailAccount.findUnique({ where: { companyId: company.id } });
 
   return NextResponse.json({
@@ -37,7 +38,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const body = await req.json();
 
   const provider = body.provider as MailProvider;
@@ -91,7 +93,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   await prisma.mailAccount.deleteMany({ where: { companyId: company.id } });
   return NextResponse.json({ connected: false });
 }

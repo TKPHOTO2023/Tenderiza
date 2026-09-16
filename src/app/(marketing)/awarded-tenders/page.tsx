@@ -52,7 +52,7 @@ export default function AwardedTendersPage() {
             first.
           </p>
           <Link
-            href="/onboarding"
+            href="/signup"
             className="group inline-flex shrink-0 items-center gap-2 bg-[var(--field)] px-6 py-3.5 text-[15px] font-bold text-white transition-transform hover:scale-[1.02]"
           >
             Start free trial

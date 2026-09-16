@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 import { assembleBidEmail } from "@/lib/bid-pack";
 import { sendBidEmail } from "@/lib/mail-sender";
+import { getEntitlements } from "@/lib/entitlements";
 
 export const maxDuration = 60;
 
@@ -16,7 +17,8 @@ export const maxDuration = 60;
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const current = await getOrCreateCurrentCompany();
+  const current = await getCurrentCompany();
+  if (!current) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
   const [company, draft, account] = await Promise.all([
     prisma.company.findUnique({
@@ -36,6 +38,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       { status: 400 }
     );
   }
+  const entitlements = await getEntitlements(current.id);
+  if (!entitlements.canSendFromMailbox) {
+    return NextResponse.json(
+      {
+        error: "Sending straight from your mailbox is a Pro feature. You can still download the bid email and send it yourself.",
+        upgradeRequired: true,
+      },
+      { status: 402 }
+    );
+  }
+
   if (draft.status !== "APPROVED") {
     return NextResponse.json(
       { error: "Approve this bid first — that's where you confirm the checklist and your pricing." },

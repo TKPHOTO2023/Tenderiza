@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 import { computeMatchForTender } from "@/lib/match-runner";
 import { generateDraft } from "@/lib/draft-runner";
+import { getEntitlements, recordDraftUsage } from "@/lib/entitlements";
 
 export const maxDuration = 60;
 
@@ -20,10 +21,22 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params;
 
   const [current, tender] = await Promise.all([
-    getOrCreateCurrentCompany(),
+    getCurrentCompany(),
     prisma.tender.findUnique({ where: { id } }),
   ]);
+  if (!current) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   if (!tender) return NextResponse.json({ error: "Tender not found" }, { status: 404 });
+
+  const entitlements = await getEntitlements(current.id);
+  if (!entitlements.canGenerateDraft) {
+    return NextResponse.json(
+      {
+        error: `You've used all ${entitlements.draftsPerMonth} drafts on the free plan this month. Upgrade to Pro for unlimited drafts.`,
+        upgradeRequired: true,
+      },
+      { status: 402 }
+    );
+  }
 
   const company = await prisma.company.findUnique({
     where: { id: current.id },
@@ -44,7 +57,8 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       steps.push(`Couldn't read the documents: ${result.extractionError}`);
     }
 
-    const draft = await generateDraft(id);
+    const draft = await generateDraft(id, current.id);
+    await recordDraftUsage(current.id);
     const refreshed = await prisma.tender.findUnique({ where: { id }, select: { procurementType: true } });
     steps.push(
       refreshed?.procurementType === "RFQ"

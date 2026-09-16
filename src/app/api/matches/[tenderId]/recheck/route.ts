@@ -1,14 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { computeMatchForTender } from "@/lib/match-runner";
+import { getCurrentCompany } from "@/lib/current-company";
 
 export const maxDuration = 30;
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ tenderId: string }> }) {
   const { tenderId } = await params;
 
+  const current = await getCurrentCompany();
+  if (!current) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+
   const [company, tender] = await Promise.all([
-    prisma.company.findFirst({ orderBy: { createdAt: "asc" }, include: { categories: { include: { category: true } } } }),
+    prisma.company.findUnique({
+      where: { id: current.id },
+      include: { categories: { include: { category: true } } },
+    }),
     prisma.tender.findUnique({ where: { id: tenderId } }),
   ]);
 

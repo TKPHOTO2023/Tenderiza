@@ -101,12 +101,30 @@ export interface RecomputeAllResult {
  */
 export async function recomputeAllMatches({
   maxExtractions = 5,
-}: { maxExtractions?: number } = {}): Promise<RecomputeAllResult> {
-  const company = await prisma.company.findFirst({
-    orderBy: { createdAt: "asc" },
-    include: { categories: { include: { category: true } } },
-  });
-  if (!company) return { scored: 0, extractionsRun: 0, extractionErrors: 0 };
+  companyId,
+}: { maxExtractions?: number; companyId?: string } = {}): Promise<RecomputeAllResult> {
+  // Without a companyId this runs for every account — that's the nightly cron.
+  const companies = companyId
+    ? await prisma.company.findMany({
+        where: { id: companyId },
+        include: { categories: { include: { category: true } } },
+      })
+    : await prisma.company.findMany({ include: { categories: { include: { category: true } } } });
+
+  const totals = { scored: 0, extractionsRun: 0, extractionErrors: 0 };
+  for (const company of companies) {
+    const result = await recomputeForCompany(company, maxExtractions);
+    totals.scored += result.scored;
+    totals.extractionsRun += result.extractionsRun;
+    totals.extractionErrors += result.extractionErrors;
+  }
+  return totals;
+}
+
+async function recomputeForCompany(
+  company: CompanyWithCategories,
+  maxExtractions: number
+): Promise<RecomputeAllResult> {
 
   const tenders = await prisma.tender.findMany({
     where: { status: TenderStatus.OPEN, closingDate: { gt: new Date() } },

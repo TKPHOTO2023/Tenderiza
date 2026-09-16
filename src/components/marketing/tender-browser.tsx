@@ -190,7 +190,7 @@ export function TenderBrowser({ initialTenders, provinces }: Props) {
             </p>
           </div>
           <Link
-            href="/onboarding"
+            href="/signup"
             className="shrink-0 bg-[var(--gold)] px-5 py-3 text-[14px] font-bold text-[var(--ink)] transition-transform hover:scale-[1.03]"
           >
             Unlock all tenders

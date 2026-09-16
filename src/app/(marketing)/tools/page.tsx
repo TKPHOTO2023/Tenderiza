@@ -88,7 +88,7 @@ export default function ToolsPage() {
         </div>
 
         <Link
-          href="/onboarding"
+          href="/signup"
           className="group mt-12 inline-flex items-center gap-2 bg-[var(--field)] px-7 py-4 text-[15px] font-bold text-white transition-transform hover:scale-[1.02]"
         >
           Try the tools free

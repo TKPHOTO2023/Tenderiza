@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ tenderId: string }> }) {
   const { tenderId } = await params;
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
   const match = await prisma.match.findUnique({
     where: { companyId_tenderId: { companyId: company.id, tenderId } },

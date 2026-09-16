@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 import { assembleBidEmail, renderEml } from "@/lib/bid-pack";
 
 export const maxDuration = 60;
 
 async function load(id: string) {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return null;
   const [full, draft] = await Promise.all([
     prisma.company.findUnique({
       where: { id: company.id },

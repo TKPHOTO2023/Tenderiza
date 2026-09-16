@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 
 export async function GET() {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const full = await prisma.company.findUnique({
     where: { id: company.id },
     include: {
@@ -17,7 +18,8 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const body = await req.json();
 
   const {

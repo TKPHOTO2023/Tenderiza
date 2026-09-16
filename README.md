@@ -518,6 +518,54 @@ sequence: qualify → compulsory briefing → documents → draft → price →
 approve → send, with the next action highlighted. Every step reports real
 state; a failed hard requirement blocks rather than quietly passing.
 
+## Accounts, plans and billing
+
+**The app is no longer single-tenant.** Every `Company` belongs to a `User`,
+and every request resolves through `getCurrentCompany()`
+(`src/lib/current-company.ts`), which returns the signed-in user's company or
+`null`. There is no shared fallback company any more — that was the thing
+making a paywall meaningless.
+
+- **Auth** (`src/lib/auth.ts`): email + password, hashed with scrypt from
+  Node's own crypto (a real password KDF, and no native dependency to break a
+  build). Sessions are server-side rows so a login can actually be revoked;
+  the cookie holds a random token and only its SHA-256 hash is stored.
+- `src/middleware.ts` is a cheap edge gate — it 401s API calls and redirects
+  page requests with no session cookie. It can't reach the database, so every
+  route still resolves the real session itself.
+- Public without a session: the marketing site, `GET /api/tenders`,
+  `/api/contact`, `/api/cron/*`, and the Yoco webhook.
+
+**Plans** (`src/lib/entitlements.ts`): Free is a working tier — find tenders,
+check eligibility, 2 AI-drafted bids a month, and downloading the bid pack.
+Pro adds unlimited drafts and sending straight from a connected mailbox.
+
+**Billing is prepaid, not a subscription.** [Yoco's gateway has no recurring
+billing or card tokenisation](https://developer.yoco.com/docs/checkout-api/introduction),
+so a payment buys a fixed access period (1 or 12 months) rather than
+auto-renewing. Paying again before expiry stacks the time rather than
+replacing it, and when a period lapses the account falls back to Free
+**without losing any data**.
+
+Two independent gates guard `POST /api/billing/webhook` before access is
+granted: the Standard Webhooks (Svix-style) signature must verify *and* the
+checkout is re-read from Yoco's own API to confirm it was actually paid. So a
+forged or replayed event grants nothing even if the signing secret leaked.
+Handling is idempotent, since Yoco retries.
+
+Set `YOCO_SECRET_KEY` and `YOCO_WEBHOOK_SECRET` to enable payments; without
+them the checkout route returns a clear 503 rather than half-working.
+
+### Upgrading an existing installation
+
+Adding accounts backfills an owner user for each pre-existing company, with a
+password nobody can sign in with, so no existing profile or document is
+orphaned. Claim it:
+
+```bash
+npm run claim-account you@company.co.za "your-password"
+```
+
 **Still to come in Phase 6**: in-platform document preview, a B-BBEE
 preference-point calculator, and a clarification-question generator. OAuth
 mailbox connection (rather than SMTP) is also still open — Gmail's

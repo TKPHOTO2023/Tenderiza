@@ -81,7 +81,7 @@ export default async function HomePage() {
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link
-                href="/onboarding"
+                href="/signup"
                 className="group inline-flex items-center gap-2 bg-[var(--gold)] px-7 py-4 text-[15px] font-bold text-[var(--ink)] transition-transform hover:scale-[1.03]"
               >
                 Start free trial
@@ -235,7 +235,7 @@ export default async function HomePage() {
           </div>
           <div className="flex lg:justify-end">
             <Link
-              href="/onboarding"
+              href="/signup"
               className="group inline-flex items-center gap-2 bg-[var(--gold)] px-8 py-5 text-[16px] font-bold text-[var(--ink)] transition-transform hover:scale-[1.03]"
             >
               Start free trial

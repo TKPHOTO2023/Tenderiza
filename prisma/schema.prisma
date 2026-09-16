@@ -13,6 +13,44 @@ datasource db {
 }
 
 // ---------------------------------------------------------------------------
+// Accounts & sessions
+//
+// Until now the app was single-tenant: one Company row, reachable by anyone
+// with the URL. Subscriptions only mean something once a request can be tied
+// to a specific paying account, so every Company now belongs to a User.
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  name         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions Session[]
+  company  Company?
+
+  @@map("users")
+}
+
+// Server-side sessions, so a login can actually be revoked. The cookie holds
+// a random token; only its SHA-256 hash is stored here.
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+// ---------------------------------------------------------------------------
 // Core company profile
 // ---------------------------------------------------------------------------
 
@@ -70,6 +108,10 @@ enum OnboardingStep {
 
 model Company {
   id String @id @default(cuid())
+
+  // Owner of this company profile. Every request is scoped through here.
+  ownerId String @unique
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   // Step 1: Company basics
   companyName        String?
@@ -132,6 +174,7 @@ model Company {
   matches      Match[]
   drafts       Draft[]
   mailAccount  MailAccount?
+  subscription Subscription?
 
   @@map("companies")
 }
@@ -488,6 +531,68 @@ model MailAccount {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@map("mail_accounts")
+}
+
+// ---------------------------------------------------------------------------
+// Billing — prepaid access periods via Yoco
+//
+// Yoco's gateway has no recurring/subscription billing, so a payment buys a
+// fixed access period. When it lapses the account falls back to FREE rather
+// than being locked out of its own data.
+// ---------------------------------------------------------------------------
+
+enum Plan {
+  FREE
+  PRO
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model Subscription {
+  id        String @id @default(cuid())
+  companyId String @unique
+
+  plan               Plan      @default(FREE)
+  currentPeriodEnd   DateTime? // null on FREE; PRO lapses to FREE after this
+  draftsUsedThisCycle Int      @default(0)
+  cycleStartedAt     DateTime  @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@map("subscriptions")
+}
+
+model Payment {
+  id             String @id @default(cuid())
+  subscriptionId String
+
+  // Yoco's checkout id, so a webhook can be matched back to what was bought
+  // and replayed events stay idempotent.
+  checkoutId String  @unique
+  paymentId  String?
+
+  amountCents Int
+  currency    String        @default("ZAR")
+  months      Int // access period this payment buys
+  status      PaymentStatus @default(PENDING)
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([subscriptionId])
+  @@map("payments")
 }
 
 // ---------------------------------------------------------------------------

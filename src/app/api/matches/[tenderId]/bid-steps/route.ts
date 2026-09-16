@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 import { buildBidSteps } from "@/lib/bid-readiness";
 import type { HardCheck } from "@/lib/match-eligibility";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ tenderId: string }> }) {
   const { tenderId } = await params;
-  const current = await getOrCreateCurrentCompany();
+  const current = await getCurrentCompany();
+  if (!current) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
   const [company, tender, match, draft] = await Promise.all([
     prisma.company.findUnique({

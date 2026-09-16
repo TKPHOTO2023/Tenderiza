@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import useSWR from "swr";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   Building2,
@@ -10,6 +12,8 @@ import {
   FileText,
   LayoutDashboard,
   Palette,
+  CreditCard,
+  LogOut,
   Sparkles,
   Target,
 } from "lucide-react";
@@ -23,10 +27,24 @@ const NAV_ITEMS = [
   { href: "/dashboard/matches", label: "Matches", icon: Target },
   { href: "/dashboard/drafts", label: "Drafts", icon: Sparkles },
   { href: "/dashboard/review", label: "Review & submission", icon: ClipboardCheck },
+  { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
 ];
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { data } = useSWR<{ user: { email: string } | null; entitlements: { plan: string; draftsUsed: number; draftsPerMonth: number } | null }>(
+    "/api/auth/me",
+    fetcher
+  );
+
+  async function signOut() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
+  }
 
   return (
     <aside className="hidden w-60 shrink-0 border-r border-border bg-card/50 px-3 py-6 md:block">
@@ -57,6 +75,42 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {data?.user && (
+        <div className="mt-6 border-t border-border pt-4">
+          <Link
+            href="/dashboard/billing"
+            className="block rounded-md px-3 py-2 transition-colors hover:bg-accent"
+          >
+            <span className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">Plan</span>
+              <span
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                  data.entitlements?.plan === "PRO"
+                    ? "bg-success text-success-foreground"
+                    : "bg-secondary text-secondary-foreground"
+                )}
+              >
+                {data.entitlements?.plan ?? "FREE"}
+              </span>
+            </span>
+            {data.entitlements?.plan === "FREE" && (
+              <span className="mt-1 block text-[11px] text-muted-foreground">
+                {data.entitlements.draftsUsed}/{data.entitlements.draftsPerMonth} drafts used — upgrade for
+                unlimited
+              </span>
+            )}
+          </Link>
+          <p className="mt-2 truncate px-3 text-[11px] text-muted-foreground">{data.user.email}</p>
+          <button
+            onClick={signOut}
+            className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            <LogOut className="h-4 w-4" /> Sign out
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

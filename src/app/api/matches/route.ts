@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { MatchStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 
 const STATUS_RANK: Record<MatchStatus, number> = {
   ELIGIBLE: 0,
@@ -11,7 +11,8 @@ const STATUS_RANK: Record<MatchStatus, number> = {
 };
 
 export async function GET() {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
 
   const matches = await prisma.match.findMany({
     where: { companyId: company.id },

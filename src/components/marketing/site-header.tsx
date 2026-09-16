@@ -54,11 +54,11 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden items-center gap-4 lg:flex">
-            <Link href="/dashboard" className="text-[15px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)]">
+            <Link href="/login" className="text-[15px] font-medium text-[var(--ink-2)] hover:text-[var(--ink)]">
               Login
             </Link>
             <Link
-              href="/onboarding"
+              href="/signup"
               className="bg-[var(--field)] px-5 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-[var(--field-2)]"
             >
               Start free trial
@@ -91,14 +91,14 @@ export function SiteHeader() {
             ))}
             <div className="mt-4 grid gap-2">
               <Link
-                href="/dashboard"
+                href="/login"
                 onClick={() => setOpen(false)}
                 className="border border-[var(--rule)] py-2.5 text-center text-[14px] font-semibold text-[var(--ink)]"
               >
                 Login
               </Link>
               <Link
-                href="/onboarding"
+                href="/signup"
                 onClick={() => setOpen(false)}
                 className="bg-[var(--field)] py-2.5 text-center text-[14px] font-semibold text-white"
               >

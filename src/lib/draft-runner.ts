@@ -19,10 +19,10 @@ export interface DraftDocumentRef {
  * upserts the Draft row. Safe to call again later ("Regenerate") if the
  * tender's requirements or the company profile have changed.
  */
-export async function generateDraft(tenderId: string) {
+export async function generateDraft(tenderId: string, companyId: string) {
   const [company, tender] = await Promise.all([
-    prisma.company.findFirst({
-      orderBy: { createdAt: "asc" },
+    prisma.company.findUnique({
+      where: { id: companyId },
       include: { documents: { include: { documentType: true } }, references: true },
     }),
     prisma.tender.findUnique({ where: { id: tenderId } }),

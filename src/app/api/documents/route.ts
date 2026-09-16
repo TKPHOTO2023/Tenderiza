@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 import { storage } from "@/lib/storage";
 
 export async function GET() {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const documents = await prisma.companyDocument.findMany({
     where: { companyId: company.id },
     include: { documentType: true },
@@ -14,7 +15,8 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const formData = await req.formData();
 
   const file = formData.get("file");

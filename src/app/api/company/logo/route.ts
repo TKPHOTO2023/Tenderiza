@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateCurrentCompany } from "@/lib/current-company";
+import { getCurrentCompany } from "@/lib/current-company";
 import { storage } from "@/lib/storage";
 
 // pdf-lib can only embed PNG and JPEG, and the logo's whole job is to go on a
@@ -9,7 +9,8 @@ const ALLOWED = ["image/png", "image/jpeg"];
 const MAX_BYTES = 2 * 1024 * 1024;
 
 export async function POST(req: NextRequest) {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   const formData = await req.formData();
   const file = formData.get("file");
 
@@ -37,7 +38,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE() {
-  const company = await getOrCreateCurrentCompany();
+  const company = await getCurrentCompany();
+  if (!company) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
   if (company.logoUrl) await storage.remove(company.logoUrl);
   await prisma.company.update({ where: { id: company.id }, data: { logoUrl: null } });
   return NextResponse.json({ logoUrl: null });
