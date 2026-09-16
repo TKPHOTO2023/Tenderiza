@@ -10,6 +10,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { MatchStatusBadge } from "@/components/matches/match-status-badge";
 import { ProcurementTypeBadge } from "@/components/tenders/procurement-type-badge";
 import { PricingScheduleTable } from "@/components/tenders/pricing-schedule-table";
+import { AtAGlance } from "@/components/tenders/at-a-glance";
+import { BidSteps } from "@/components/tenders/bid-steps";
+import type { BidStep } from "@/lib/bid-readiness";
 import { formatDate } from "@/lib/format";
 import { ArrowLeft, ArrowRight, CheckCircle2, XCircle, HelpCircle, Info, RefreshCw, FileEdit } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -33,6 +36,10 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
     `/api/matches/${tenderId}`,
     fetcher
   );
+  const { data: bidSteps, mutate: mutateSteps } = useSWR<{ steps: BidStep[]; draftId: string | null }>(
+    `/api/matches/${tenderId}/bid-steps`,
+    fetcher
+  );
   const [rechecking, setRechecking] = useState(false);
   const [generatingDraft, setGeneratingDraft] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +56,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Failed to generate draft");
+      await mutateSteps();
       router.push(`/dashboard/drafts/${body.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate draft");
@@ -64,6 +72,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
       const body = await res.json();
       if (!res.ok) throw new Error(body.error || "Failed to re-check");
       mutate(body, { revalidate: false });
+      await mutateSteps();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to re-check");
     } finally {
@@ -116,6 +125,18 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
+      )}
+
+      <AtAGlance tender={match.tender} />
+
+      {bidSteps?.steps && (
+        <BidSteps
+          steps={bidSteps.steps}
+          onAction={(key) => {
+            if (key === "draft") generateDraft();
+            if (key === "eligibility") recheck();
+          }}
+        />
       )}
 
       <Card>
@@ -173,6 +194,58 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
             <p className="text-sm text-muted-foreground">{extracted.scopeSummary}</p>
           </CardContent>
         </Card>
+      )}
+
+      {(extracted?.requiredDocuments?.length || extracted?.contactPersonName || extracted?.contactEmail) && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {extracted.requiredDocuments?.length > 0 && (
+            <Card className="border-l-4 border-l-warning">
+              <CardHeader>
+                <CardTitle className="text-base">Documents this tender asks for</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="grid gap-1.5 text-sm">
+                  {extracted.requiredDocuments.map((doc, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-muted-foreground">•</span>
+                      {doc}
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
+
+          {(extracted.contactPersonName || extracted.contactEmail || extracted.contactPhone) && (
+            <Card className="border-l-4 border-l-primary">
+              <CardHeader>
+                <CardTitle className="text-base">Enquiries</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-2 text-sm">
+                {extracted.contactPersonName && (
+                  <p>
+                    <span className="text-muted-foreground">Contact: </span>
+                    {extracted.contactPersonName}
+                  </p>
+                )}
+                {extracted.contactEmail && (
+                  <p className="break-words">
+                    <span className="text-muted-foreground">Email: </span>
+                    <a href={`mailto:${extracted.contactEmail}`} className="font-mono text-xs text-primary underline">
+                      {extracted.contactEmail}
+                    </a>
+                  </p>
+                )}
+                {extracted.contactPhone && (
+                  <p>
+                    <span className="text-muted-foreground">Phone: </span>
+                    <span className="font-mono text-xs">{extracted.contactPhone}</span>
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {match.tender.pricingSchedule != null &&
