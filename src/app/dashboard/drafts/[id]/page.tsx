@@ -21,6 +21,7 @@ import { DraftWarningBanner } from "@/components/drafts/draft-warning-banner";
 import { ChecklistItemRow } from "@/components/drafts/checklist-item-row";
 import { DraftStatusBadge } from "@/components/drafts/status-badge";
 import { AuditTrail } from "@/components/drafts/audit-trail";
+import { BidComposer } from "@/components/drafts/bid-composer";
 import { RemindersList } from "@/components/drafts/reminders-list";
 import { useAuditLog } from "@/lib/use-audit-log";
 import { useReminders } from "@/lib/use-reminders";
@@ -259,6 +260,8 @@ export default function DraftDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+
+      <BidComposer draftId={draft.id} />
 
       <Card>
         <CardHeader>

@@ -54,6 +54,34 @@ export const ExtractedRequirementsSchema = z.object({
         "Empty array if no such schedule is present. NEVER include a price or invented total — pricing is always " +
         "the bidder's own commercial decision, not something to extract, estimate, or guess."
     ),
+
+  // How to actually submit — the difference between "here's a tender" and
+  // "here's how you bid on it". Every field is null unless the document
+  // states it; a wrong submission address loses the bid.
+  submissionEmail: z
+    .string()
+    .nullable()
+    .describe("Email address bids/quotations must be sent to, exactly as stated. null if not stated or if submission isn't by email."),
+  submissionMethod: z
+    .enum(["EMAIL", "PORTAL", "PHYSICAL", "UNKNOWN"])
+    .describe("How bids must be submitted: EMAIL, PORTAL (an online portal upload), PHYSICAL (tender/bid box or hand delivery), or UNKNOWN if not stated"),
+  submissionInstructions: z
+    .string()
+    .nullable()
+    .describe("The document's own submission instructions, quoted or closely paraphrased — deadline time, bid box location, subject line format, number of copies. null if not stated."),
+  contactPersonName: z.string().nullable().describe("Enquiries contact person exactly as stated, or null"),
+  contactEmail: z.string().nullable().describe("Enquiries contact email exactly as stated, or null"),
+  contactPhone: z.string().nullable().describe("Enquiries contact phone exactly as stated, or null"),
+  deliveryLocation: z
+    .string()
+    .nullable()
+    .describe("Where goods/services must be delivered or performed, exactly as stated, or null"),
+  requiredDocuments: z
+    .array(z.string())
+    .describe(
+      "Each document the bidder must submit, exactly as the tender lists them (e.g. 'Valid tax clearance certificate', " +
+        "'Certified copy of CIPC registration', 'B-BBEE certificate or sworn affidavit'). Empty array if not stated."
+    ),
 });
 
 export type ExtractedRequirements = z.infer<typeof ExtractedRequirementsSchema>;
@@ -92,7 +120,11 @@ export async function extractTenderRequirements(tender: Tender): Promise<Extract
       "written down, even if it seems typical for this kind of tender. You also classify the procurement type " +
       "(RFQ/RFP/RFI) from the document's own wording and structure, and transcribe any itemized pricing/quantity " +
       "schedule it contains. NEVER invent, estimate, or fill in a price anywhere — pricing schedule items carry " +
-      "only description/quantity/unit, exactly as stated; leave a field null rather than guess.",
+      "only description/quantity/unit, exactly as stated; leave a field null rather than guess. " +
+      "You also extract how the bid must be submitted: the submission email address, method, instructions, " +
+      "enquiries contact, delivery location, and the list of documents the bidder must attach. A wrong " +
+      "submission address costs the bidder the tender, so transcribe these character-for-character and use " +
+      "null when the document does not state them — never infer an address from the buyer's name or a website.",
     messages: [
       {
         role: "user",
