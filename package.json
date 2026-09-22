@@ -13,6 +13,7 @@
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "claim-account": "tsx scripts/claim-account.ts",
+    "set-login": "tsx scripts/set-login.ts",
     "test-smtp": "tsx scripts/test-smtp.ts",
     "reset-password": "tsx scripts/reset-password.ts"
   },
