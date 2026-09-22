@@ -13,7 +13,7 @@
  */
 import { execFileSync } from "child_process";
 import { randomBytes } from "crypto";
-import { prisma } from "../src/lib/prisma";
+import { loadPrisma } from "./_prisma";
 import { hashPassword } from "../src/lib/auth";
 
 const PLACEHOLDER = "locked$needs-claim";
@@ -43,6 +43,9 @@ async function main() {
   console.log("Applying any pending migrations…");
   // Inherits DATABASE_URL, so this hits whichever database the caller pointed at.
   execFileSync("npx", ["prisma", "migrate", "deploy"], { stdio: "inherit" });
+
+  // After migrating, so the client matches the schema now in the database.
+  const prisma = await loadPrisma();
 
   const existing = await prisma.user.findUnique({
     where: { email },

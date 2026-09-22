@@ -16,12 +16,14 @@
  *
  *   npx tsx scripts/set-login.ts you@yourdomain.co.za "your-password"
  */
-import { prisma } from "../src/lib/prisma";
+import { loadPrisma } from "./_prisma";
 import { hashPassword } from "../src/lib/auth";
 
 const PLACEHOLDER = "locked$needs-claim";
 
 async function main() {
+  const prisma = await loadPrisma();
+
   const [rawEmail, password] = process.argv.slice(2);
 
   if (!rawEmail || !password) {

@@ -10,10 +10,12 @@
  *
  * Run with no arguments to list the accounts that exist.
  */
-import { prisma } from "../src/lib/prisma";
+import { loadPrisma } from "./_prisma";
 import { hashPassword } from "../src/lib/auth";
 
 async function main() {
+  const prisma = await loadPrisma();
+
   const [email, password] = process.argv.slice(2);
 
   if (!email) {
