@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FileSignature, Loader2, Check } from "lucide-react";
+import { readJson } from "@/lib/api-client";
 
 /**
  * The single entry point into bidding. Runs extraction, matching and drafting
@@ -36,8 +37,7 @@ export function BidButton({
 
     try {
       const res = await fetch(`/api/tenders/${tenderId}/bid`, { method: "POST" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Couldn't prepare this bid");
+      const body = await readJson(res);
       setStage("Ready");
       router.push(`/dashboard/drafts/${body.draftId}`);
     } catch (err) {

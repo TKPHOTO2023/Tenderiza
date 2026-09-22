@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useSyncStatus } from "@/lib/use-tenders";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { readJson } from "@/lib/api-client";
 
 export function SyncButton({ onSynced }: { onSynced?: () => void }) {
   const { lastSync, mutate } = useSyncStatus();
@@ -16,8 +17,7 @@ export function SyncButton({ onSynced }: { onSynced?: () => void }) {
     setError(null);
     try {
       const res = await fetch("/api/tenders/sync?daysBack=14", { method: "POST" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Sync failed");
+      await readJson(res);
       await mutate();
       onSynced?.();
     } catch (err) {

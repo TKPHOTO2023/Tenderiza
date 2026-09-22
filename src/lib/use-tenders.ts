@@ -2,8 +2,8 @@
 
 import useSWR from "swr";
 import type { Tender, TenderSyncLog } from "@prisma/client";
+import { fetchJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export interface TendersResponse {
   tenders: Tender[];
@@ -11,12 +11,12 @@ export interface TendersResponse {
 }
 
 export function useTenders(query: string) {
-  const { data, isLoading, mutate } = useSWR<TendersResponse>(`/api/tenders?${query}`, fetcher);
+  const { data, isLoading, mutate } = useSWR<TendersResponse>(`/api/tenders?${query}`, fetchJson);
   return { data, isLoading, mutate };
 }
 
 export function useSyncStatus() {
-  const { data, mutate } = useSWR<TenderSyncLog | null>("/api/tenders/sync", fetcher, {
+  const { data, mutate } = useSWR<TenderSyncLog | null>("/api/tenders/sync", fetchJson, {
     refreshInterval: 5000,
   });
   return { lastSync: data, mutate };

@@ -2,11 +2,11 @@
 
 import useSWR from "swr";
 import type { CompanyFull } from "@/lib/api-types";
+import { fetchJson, readJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function useCompany() {
-  const { data, error, isLoading, mutate } = useSWR<CompanyFull>("/api/company", fetcher);
+  const { data, error, isLoading, mutate } = useSWR<CompanyFull>("/api/company", fetchJson);
 
   async function updateCompany(fields: object) {
     const res = await fetch("/api/company", {
@@ -15,10 +15,10 @@ export function useCompany() {
       body: JSON.stringify(fields),
     });
     if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
+      const body = await readJson(res).catch(() => ({}));
       throw new Error(body.error || "Failed to save your profile. Please try again.");
     }
-    const updated = await res.json();
+    const updated = await readJson(res);
     mutate(updated, { revalidate: false });
     return updated as CompanyFull;
   }
@@ -27,6 +27,6 @@ export function useCompany() {
 }
 
 export function useCategories() {
-  const { data } = useSWR<{ id: string; code: string; name: string }[]>("/api/categories", fetcher);
+  const { data } = useSWR<{ id: string; code: string; name: string }[]>("/api/categories", fetchJson);
   return data ?? [];
 }

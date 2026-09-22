@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2, Mail, Trash2 } from "lucide-react";
+import { fetchJson, readJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 type Provider = "GMAIL" | "OUTLOOK" | "SMTP";
 
@@ -31,7 +31,7 @@ interface MailState {
 }
 
 export function MailboxConnect() {
-  const { data, mutate } = useSWR<MailState>("/api/mail-account", fetcher);
+  const { data, mutate } = useSWR<MailState>("/api/mail-account", fetchJson);
   const [provider, setProvider] = useState<Provider>("GMAIL");
   const [form, setForm] = useState({ fromName: "", fromAddress: "", username: "", password: "", host: "", port: "" });
   const [busy, setBusy] = useState(false);
@@ -58,7 +58,7 @@ export function MailboxConnect() {
           port: form.port ? Number(form.port) : preset.port,
         }),
       });
-      const body = await res.json();
+      const body = await readJson(res);
       if (!res.ok || body.verified === false) throw new Error(body.error || "Couldn't connect to that mailbox");
       setForm({ fromName: "", fromAddress: "", username: "", password: "", host: "", port: "" });
       await mutate();

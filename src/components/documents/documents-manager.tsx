@@ -24,8 +24,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ExpiryBadge } from "./expiry-badge";
 import { FileText, Plus, Trash2, Upload } from "lucide-react";
 import type { CompanyDocumentWithType } from "@/lib/api-types";
+import { fetchJson, readJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface DocumentType {
   id: string;
@@ -38,11 +38,11 @@ interface DocumentType {
 export function DocumentsManager() {
   const { data: documentTypes, mutate: mutateTypes } = useSWR<DocumentType[]>(
     "/api/document-types",
-    fetcher
+    fetchJson
   );
   const { data: documents, mutate: mutateDocuments } = useSWR<CompanyDocumentWithType[]>(
     "/api/documents",
-    fetcher
+    fetchJson
   );
 
   const [documentTypeId, setDocumentTypeId] = useState("");
@@ -84,7 +84,7 @@ export function DocumentsManager() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ label: customLabel, requiresExpiry: customRequiresExpiry }),
     });
-    const created = await res.json();
+    const created = await readJson(res);
     await mutateTypes();
     setDocumentTypeId(created.id);
     setCustomLabel("");

@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { AlertTriangle, Sparkles } from "lucide-react";
 import type { Tender } from "@prisma/client";
 import type { TenderRequirements } from "@/lib/tender-summary";
+import { readJson } from "@/lib/api-client";
 
 export function RequirementsSummary({
   tender,
@@ -27,8 +28,7 @@ export function RequirementsSummary({
     setError(null);
     try {
       const res = await fetch(`/api/tenders/${tender.id}/summary`, { method: "POST" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Failed to generate summary");
+      const body = await readJson(res);
       onUpdated(body);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate summary");

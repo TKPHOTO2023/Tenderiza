@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowRight } from "lucide-react";
+import { readJson } from "@/lib/api-client";
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -28,8 +29,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Something went wrong");
+      await readJson(res);
 
       // A new account goes to onboarding; a returning one to wherever it was headed.
       const next = params.get("next");

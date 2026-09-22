@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils";
 import type { Match, Tender } from "@prisma/client";
 import type { HardCheck } from "@/lib/match-eligibility";
 import type { ExtractedRequirements } from "@/lib/tender-extraction";
+import { fetchJson, readJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const CHECK_ICON = {
   pass: <CheckCircle2 className="h-4 w-4 text-success" />,
@@ -35,11 +35,11 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
   const { tenderId } = use(params);
   const { data: match, isLoading, mutate } = useSWR<Match & { tender: Tender }>(
     `/api/matches/${tenderId}`,
-    fetcher
+    fetchJson
   );
   const { data: bidSteps, mutate: mutateSteps } = useSWR<{ steps: BidStep[]; draftId: string | null }>(
     `/api/matches/${tenderId}/bid-steps`,
-    fetcher
+    fetchJson
   );
   const [rechecking, setRechecking] = useState(false);
   const [generatingDraft, setGeneratingDraft] = useState(false);
@@ -55,8 +55,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenderId }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Failed to generate draft");
+      const body = await readJson(res);
       await mutateSteps();
       router.push(`/dashboard/drafts/${body.id}`);
     } catch (err) {
@@ -70,8 +69,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ tenderId
     setError(null);
     try {
       const res = await fetch(`/api/matches/${tenderId}/recheck`, { method: "POST" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Failed to re-check");
+      const body = await readJson(res);
       mutate(body, { revalidate: false });
       await mutateSteps();
     } catch (err) {

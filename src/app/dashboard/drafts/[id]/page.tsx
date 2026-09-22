@@ -32,8 +32,8 @@ import type { Draft, Tender } from "@prisma/client";
 import type { ChecklistItem } from "@/lib/compliance-checklist";
 import type { DraftDocumentRef } from "@/lib/draft-runner";
 import type { ExtractedRequirements } from "@/lib/tender-extraction";
+import { fetchJson, readJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 const KIND_LABEL: Record<DraftDocumentRef["kind"], string> = {
   official_form_filled: "Official form (pre-filled)",
@@ -47,7 +47,7 @@ type DraftWithTender = Draft & { tender: Tender };
 
 export default function DraftDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: draft, isLoading, mutate } = useSWR<DraftWithTender>(`/api/drafts/${id}`, fetcher);
+  const { data: draft, isLoading, mutate } = useSWR<DraftWithTender>(`/api/drafts/${id}`, fetchJson);
   const { logs, isLoading: logsLoading } = useAuditLog(id);
   const { reminders } = useReminders();
   const [regenerating, setRegenerating] = useState(false);
@@ -63,8 +63,7 @@ export default function DraftDetailPage({ params }: { params: Promise<{ id: stri
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, ...extra }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Action failed");
+      const body = await readJson(res);
       await mutate(body, { revalidate: false });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Action failed");
@@ -83,8 +82,7 @@ export default function DraftDetailPage({ params }: { params: Promise<{ id: stri
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenderId: draft.tenderId }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Failed to regenerate");
+      const body = await readJson(res);
       await mutate(body, { revalidate: false });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to regenerate");

@@ -10,6 +10,7 @@ import { AlertTriangle, Calculator } from "lucide-react";
 import { formatCurrency } from "@/lib/format";
 import type { Tender } from "@prisma/client";
 import type { TenderCostEstimate } from "@/lib/tender-cost-estimate";
+import { readJson } from "@/lib/api-client";
 
 const CONFIDENCE_VARIANT = {
   low: "outline",
@@ -34,8 +35,7 @@ export function CostEstimate({
     setError(null);
     try {
       const res = await fetch(`/api/tenders/${tender.id}/cost-estimate`, { method: "POST" });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Failed to generate cost estimate");
+      const body = await readJson(res);
       onUpdated(body);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate cost estimate");

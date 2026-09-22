@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowRight } from "lucide-react";
+import { readJson } from "@/lib/api-client";
 
 export function ResetPasswordForm() {
   const router = useRouter();
@@ -30,8 +31,7 @@ export function ResetPasswordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, password: form.password }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Something went wrong");
+      await readJson(res);
       // The reset dropped every session, so signing in again is the next step.
       router.push("/login?reset=1");
     } catch (err) {

@@ -2,10 +2,10 @@
 
 import useSWR from "swr";
 import type { Reminder } from "@/lib/reminders";
+import { fetchJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function useReminders() {
-  const { data, isLoading, mutate } = useSWR<Reminder[]>("/api/reminders", fetcher);
+  const { data, isLoading, mutate } = useSWR<Reminder[]>("/api/reminders", fetchJson);
   return { reminders: data, isLoading, mutate };
 }

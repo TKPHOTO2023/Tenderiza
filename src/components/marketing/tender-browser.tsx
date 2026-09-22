@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Search, SlidersHorizontal, Lock, X } from "lucide-react";
 import type { ProcurementType, Tender } from "@prisma/client";
 import { TenderCard } from "./tender-card";
+import { readJson } from "@/lib/api-client";
 
 // UNKNOWN is deliberately not a filter — an unclassified tender shouldn't get
 // its own tab, it just shows up under ALL.
@@ -44,7 +45,7 @@ export function TenderBrowser({ initialTenders, provinces }: Props) {
       if (province) params.set("province", province);
       try {
         const res = await fetch(`/api/tenders?${params}`);
-        const data = await res.json();
+        const data = await readJson(res);
         setTenders(data.tenders ?? []);
       } finally {
         setLoading(false);

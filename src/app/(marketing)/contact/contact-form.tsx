@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { readJson } from "@/lib/api-client";
 
 const FIELD =
   "h-11 w-full border border-[var(--rule)] bg-white px-3 text-[15px] outline-none transition-colors focus:border-[var(--field)] focus:ring-2 focus:ring-[var(--field)]/15";
@@ -21,8 +22,7 @@ export function ContactForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "That didn't send. Try again.");
+      await readJson(res);
       setStatus("sent");
     } catch (err) {
       setError(err instanceof Error ? err.message : "That didn't send. Try again.");

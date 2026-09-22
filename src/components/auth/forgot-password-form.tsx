@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowRight, MailCheck } from "lucide-react";
+import { readJson } from "@/lib/api-client";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
@@ -24,8 +25,7 @@ export function ForgotPasswordForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Something went wrong");
+      await readJson(res);
       setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

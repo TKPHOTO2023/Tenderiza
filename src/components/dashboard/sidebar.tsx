@@ -17,6 +17,7 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
+import { fetchJson } from "@/lib/api-client";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -30,14 +31,13 @@ const NAV_ITEMS = [
   { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
 ];
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { data } = useSWR<{ user: { email: string } | null; entitlements: { plan: string; draftsUsed: number; draftsPerMonth: number } | null }>(
     "/api/auth/me",
-    fetcher
+    fetchJson
   );
 
   async function signOut() {

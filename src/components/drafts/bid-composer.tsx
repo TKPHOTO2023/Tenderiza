@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertTriangle, Download, Mail, Paperclip, Building2, FileText, Send } from "lucide-react";
+import { fetchJson, readJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface BidEmailPreview {
   to: string | null;
@@ -34,10 +34,10 @@ function formatSize(bytes: number) {
 }
 
 export function BidComposer({ draftId }: { draftId: string }) {
-  const { data, isLoading } = useSWR<BidEmailPreview>(`/api/drafts/${draftId}/bid-email`, fetcher);
+  const { data, isLoading } = useSWR<BidEmailPreview>(`/api/drafts/${draftId}/bid-email`, fetchJson);
   const { data: mail } = useSWR<{ connected: boolean; account: { fromAddress: string } | null }>(
     "/api/mail-account",
-    fetcher
+    fetchJson
   );
   const [overrides, setOverrides] = useState<{ to?: string; subject?: string; body?: string }>({});
   const [downloading, setDownloading] = useState(false);
@@ -61,8 +61,7 @@ export function BidComposer({ draftId }: { draftId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ to, subject, body }),
       });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Sending failed");
+      await readJson(res);
       setSent(true);
     } catch (err) {
       setSendError(err instanceof Error ? err.message : "Sending failed");

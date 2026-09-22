@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useCompany } from "@/lib/use-company";
 import { Upload, Trash2, Check } from "lucide-react";
 import { MailboxConnect } from "@/components/brand/mailbox-connect";
+import { readJson } from "@/lib/api-client";
 
 const DEFAULT_PRIMARY = "#053B2C";
 const DEFAULT_ACCENT = "#FFB612";
@@ -57,8 +58,7 @@ export default function BrandPage() {
       const data = new FormData();
       data.append("file", file);
       const res = await fetch("/api/company/logo", { method: "POST", body: data });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Upload failed");
+      await readJson(res);
       await mutate();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");

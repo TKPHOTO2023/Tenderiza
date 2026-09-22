@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Check, CreditCard, Clock } from "lucide-react";
+import { fetchJson, readJson } from "@/lib/api-client";
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 interface Me {
   entitlements: {
@@ -36,7 +36,7 @@ const PRO_FEATURES = [
 ];
 
 function BillingContent() {
-  const { data, mutate } = useSWR<Me>("/api/auth/me", fetcher);
+  const { data, mutate } = useSWR<Me>("/api/auth/me", fetchJson);
   const params = useSearchParams();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,8 +54,7 @@ function BillingContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ option }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || "Couldn't start the checkout");
+      const body = await readJson(res);
       // Yoco hosts the card form, so this leaves the app entirely.
       window.location.assign(body.redirectUrl);
     } catch (err) {
