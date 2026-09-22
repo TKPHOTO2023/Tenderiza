@@ -29,8 +29,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions Session[]
-  company  Company?
+  sessions    Session[]
+  resetTokens PasswordResetToken[]
+  company     Company?
 
   @@map("users")
 }
@@ -115,24 +116,24 @@ model Company {
 
   // Step 1: Company basics
   companyName        String?
-  tradingName         String?
-  registrationNumber  String?
-  vatNumber           String?
-  companyType         CompanyType?
-  contactPersonName   String?
-  contactEmail        String?
-  contactPhone        String?
-  addressLine1        String?
-  addressLine2        String?
-  city                String?
-  postalCode          String?
-  operatingProvinces  Province[] @default([])
-  website             String?
-  description         String?
+  tradingName        String?
+  registrationNumber String?
+  vatNumber          String?
+  companyType        CompanyType?
+  contactPersonName  String?
+  contactEmail       String?
+  contactPhone       String?
+  addressLine1       String?
+  addressLine2       String?
+  city               String?
+  postalCode         String?
+  operatingProvinces Province[]   @default([])
+  website            String?
+  description        String?
 
   // Step 2: Compliance & registration status
-  csdRegistrationNumber String?
-  csdStatus             CsdStatus?
+  csdRegistrationNumber  String?
+  csdStatus              CsdStatus?
   taxComplianceStatusPin String?
   taxComplianceExpiry    DateTime?
   bbbeeLevel             BbbeeLevel?
@@ -142,8 +143,8 @@ model Company {
   cidbClassOfWork        String?
 
   // Step 3: Business capability
-  teamSize        Int?
-  capacityNotes   String?
+  teamSize      Int?
+  capacityNotes String?
 
   // Brand kit — applied as a letterhead to documents Tenderiza generates
   // itself (quotations, proposals, checklists). Never applied over a
@@ -167,14 +168,14 @@ model Company {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  categories   CompanyCategory[]
+  categories     CompanyCategory[]
   accreditations CompanyAccreditation[]
-  references   CompanyReference[]
-  documents    CompanyDocument[]
-  matches      Match[]
-  drafts       Draft[]
-  mailAccount  MailAccount?
-  subscription Subscription?
+  references     CompanyReference[]
+  documents      CompanyDocument[]
+  matches        Match[]
+  drafts         Draft[]
+  mailAccount    MailAccount?
+  subscription   Subscription?
 
   @@map("companies")
 }
@@ -212,12 +213,12 @@ model CompanyCategory {
 // ---------------------------------------------------------------------------
 
 model CompanyAccreditation {
-  id           String    @id @default(cuid())
-  companyId    String
-  name         String
-  referenceNo  String?
-  expiryDate   DateTime?
-  createdAt    DateTime  @default(now())
+  id          String    @id @default(cuid())
+  companyId   String
+  name        String
+  referenceNo String?
+  expiryDate  DateTime?
+  createdAt   DateTime  @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -229,13 +230,13 @@ model CompanyAccreditation {
 // ---------------------------------------------------------------------------
 
 model CompanyReference {
-  id                String   @id @default(cuid())
-  companyId         String
-  clientName        String
+  id                 String   @id @default(cuid())
+  companyId          String
+  clientName         String
   projectDescription String
-  value             Decimal? @db.Decimal(14, 2)
-  year              Int?
-  createdAt         DateTime @default(now())
+  value              Decimal? @db.Decimal(14, 2)
+  year               Int?
+  createdAt          DateTime @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
@@ -247,13 +248,13 @@ model CompanyReference {
 // ---------------------------------------------------------------------------
 
 model DocumentType {
-  id           String  @id @default(cuid())
-  code         String  @unique
-  label        String
-  description  String?
-  requiresExpiry Boolean @default(false)
-  isCustom     Boolean @default(false)
-  createdAt    DateTime @default(now())
+  id             String   @id @default(cuid())
+  code           String   @unique
+  label          String
+  description    String?
+  requiresExpiry Boolean  @default(false)
+  isCustom       Boolean  @default(false)
+  createdAt      DateTime @default(now())
 
   documents CompanyDocument[]
 
@@ -398,7 +399,7 @@ model Match {
   hardChecks Json @default("[]")
 
   status  MatchStatus
-  reasons String[] @default([]) // short human-readable "why" bullets
+  reasons String[]    @default([]) // short human-readable "why" bullets
 
   computedAt DateTime @updatedAt
 
@@ -477,9 +478,9 @@ model Draft {
 
   briefingAttended Boolean @default(false) // human marks the tender's compulsory briefing (if any) as attended
 
-  submittedAt        DateTime?
-  submissionMethod   SubmissionMethod?
-  submissionNotes    String?
+  submittedAt      DateTime?
+  submissionMethod SubmissionMethod?
+  submissionNotes  String?
 
   notSubmittingReason String?
 
@@ -557,10 +558,10 @@ model Subscription {
   id        String @id @default(cuid())
   companyId String @unique
 
-  plan               Plan      @default(FREE)
-  currentPeriodEnd   DateTime? // null on FREE; PRO lapses to FREE after this
-  draftsUsedThisCycle Int      @default(0)
-  cycleStartedAt     DateTime  @default(now())
+  plan                Plan      @default(FREE)
+  currentPeriodEnd    DateTime? // null on FREE; PRO lapses to FREE after this
+  draftsUsedThisCycle Int       @default(0)
+  cycleStartedAt      DateTime  @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -630,4 +631,21 @@ model DraftStatusLog {
 
   @@index([draftId, createdAt])
   @@map("draft_status_logs")
+}
+
+// A password-reset link. Only the token's hash is stored, so a leaked
+// database row can't be turned back into a working link. Single-use:
+// usedAt is stamped the moment a reset succeeds.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }

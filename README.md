@@ -513,6 +513,30 @@ by any API, and the connection is tested at save time. Note that Microsoft
 disables SMTP AUTH by default on many tenants — the download path is the
 fallback there.
 
+### Password resets
+
+A forgotten password can't be recovered — only replaced — because passwords
+are scrypt hashes. Two routes exist:
+
+**Customers** use `/forgot-password`. The emailed link is single-use, expires
+in an hour, is stored only as a SHA-256 hash, and revokes every existing
+session when it's redeemed. Requesting a link invalidates any earlier one,
+and the response is identical whether or not the address has an account, so
+the form can't be used to discover who has signed up.
+
+Those emails go out through the platform's own mailbox, configured from
+`SMTP_HOST` / `SMTP_USER` / `SMTP_PASSWORD` (see `.env.example`) — a plain
+SMTP host rather than a transactional-email vendor. This is deliberately
+separate from the mailbox a customer connects on the Brand page: that one
+sends their bids as them and lives encrypted in the database, and must never
+be able to send mail that appears to come from Tenderiza. Check the settings
+with `npm run test-smtp -- you@example.com` before relying on them.
+
+**Operators** can use `npm run reset-password`, which needs database
+credentials. With no arguments it lists the accounts on the database; with an
+email and a password it replaces the hash directly. Use this for the very
+first sign-in, or if SMTP is down.
+
 **Guided bid flow** (`src/lib/bid-readiness.ts`) turns a tender into a
 sequence: qualify → compulsory briefing → documents → draft → price →
 approve → send, with the next action highlighted. Every step reports real

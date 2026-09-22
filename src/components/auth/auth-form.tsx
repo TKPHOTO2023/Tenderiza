@@ -52,6 +52,12 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           : "Sign in to your Tenderiza account."}
       </p>
 
+      {!isSignup && params.get("reset") === "1" && (
+        <Alert className="mt-5">
+          <AlertDescription>Password changed. Sign in with your new one.</AlertDescription>
+        </Alert>
+      )}
+
       <form onSubmit={submit} className="mt-6 grid gap-4">
         {isSignup && (
           <div className="grid gap-1.5">
@@ -73,7 +79,14 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         </div>
 
         <div className="grid gap-1.5">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            {!isSignup && (
+              <Link href="/forgot-password" className="text-xs font-semibold text-[var(--field)] underline">
+                Forgot password?
+              </Link>
+            )}
+          </div>
           <Input
             id="password"
             type="password"
